@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { config } from '../src/config';
+import { config, type LevelKey } from '../src/config';
 import { difficultyAt } from '../src/utils/difficulty';
 import { GameSession, type EnemyState } from '../src/utils/gameSession';
 
 const halfWidth = 200;
 const halfHeight = 100;
-const newSession = (rng = () => 0) => new GameSession(halfWidth, halfHeight, rng);
+const newSession = (rng = () => 0, level: LevelKey = 'normal') =>
+  new GameSession(halfWidth, halfHeight, level, rng);
 // Ids start high so they never collide with enemies the session spawns itself.
 const enemy = (word: string, overrides: Partial<EnemyState> = {}): EnemyState => ({
   id: 100,
@@ -34,7 +35,7 @@ describe('spawning', () => {
 
   it('waits for the spawn interval before spawning again', () => {
     const session = newSession();
-    const interval = difficultyAt(0).spawnIntervalMs;
+    const interval = difficultyAt(0, 'normal').spawnIntervalMs;
 
     session.update(16);
     session.update(interval / 2);
@@ -42,6 +43,18 @@ describe('spawning', () => {
 
     session.update(interval);
     expect(session.enemies).toHaveLength(2);
+  });
+
+  it('gives enemies up to the word limit of the level', () => {
+    const wordCounts = (level: LevelKey) => {
+      let seed = 1;
+      const session = newSession(() => (seed = (seed * 16807) % 2147483647) / 2147483647, level);
+      // Long steps: every update spawns one enemy.
+      return Array.from({ length: 200 }, () => session.update(5000).spawned[0].words.length);
+    };
+
+    expect(new Set(wordCounts('easy'))).toEqual(new Set([1]));
+    expect(new Set(wordCounts('hard'))).toEqual(new Set([1, 2, 3]));
   });
 });
 

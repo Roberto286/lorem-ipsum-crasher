@@ -1,4 +1,4 @@
-import { config } from '../config';
+import { config, type LevelKey } from '../config';
 import { difficultyAt } from './difficulty';
 import { pickWord } from './words';
 
@@ -37,6 +37,7 @@ export class GameSession {
   constructor(
     private readonly halfWidth: number,
     private readonly halfHeight: number,
+    private readonly level: LevelKey,
     private readonly rng: () => number = Math.random,
   ) {}
 
@@ -102,18 +103,19 @@ export class GameSession {
     this.untilSpawnMs -= deltaMs;
     if (this.untilSpawnMs > 0) return [];
 
-    const difficulty = difficultyAt(this.elapsedMs / 1000);
+    const difficulty = difficultyAt(this.elapsedMs / 1000, this.level);
     this.untilSpawnMs += difficulty.spawnIntervalMs;
     const angle = this.rng() * Math.PI * 2;
+    const words = this.enemies.flatMap((active) => active.words);
+    const wordCount = 1 + Math.floor(this.rng() * difficulty.maxWords);
     const enemy: EnemyState = {
       id: this.nextId++,
-      words: [
-        pickWord(
-          difficulty.maxWordLength,
-          this.enemies.flatMap((active) => active.words),
-          this.rng,
-        ),
-      ],
+      // Each pick joins the list the next one must avoid, the enemy's own words included.
+      words: Array.from({ length: wordCount }, () => {
+        const word = pickWord(difficulty.maxWordLength, words, this.rng);
+        words.push(word);
+        return word;
+      }),
       angle,
       // Distance from the center to the arena edge along this angle.
       distance: Math.min(

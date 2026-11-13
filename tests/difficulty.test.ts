@@ -25,8 +25,8 @@ describe('sampleCurve', () => {
 describe('difficultyAt', () => {
   const knee = config.difficulty.enemySpeed[1][0];
   const gain = (from: number, to: number) => {
-    const a = difficultyAt(from);
-    const b = difficultyAt(to);
+    const a = difficultyAt(from, 'normal');
+    const b = difficultyAt(to, 'normal');
     return {
       speed: b.enemySpeed - a.enemySpeed,
       spawnCut: a.spawnIntervalMs - b.spawnIntervalMs,
@@ -44,13 +44,24 @@ describe('difficultyAt', () => {
   });
 
   it('stays within the configured limits in an endless run', () => {
-    const late = difficultyAt(100_000);
+    const late = difficultyAt(100_000, 'easy');
 
     expect(late.spawnIntervalMs).toBe(config.difficulty.minSpawnIntervalMs);
     expect(late.enemySpeed).toBe(config.difficulty.maxEnemySpeed);
   });
 
   it('returns whole word lengths', () => {
-    expect(Number.isInteger(difficultyAt(37).maxWordLength)).toBe(true);
+    expect(Number.isInteger(difficultyAt(37, 'normal').maxWordLength)).toBe(true);
+  });
+
+  it('sends more enemies with more words on harder levels', () => {
+    const [easy, normal, hard] = (['easy', 'normal', 'hard'] as const).map((level) =>
+      difficultyAt(30, level),
+    );
+
+    expect(normal.spawnIntervalMs).toBeLessThan(easy.spawnIntervalMs);
+    expect(hard.spawnIntervalMs).toBeLessThan(normal.spawnIntervalMs);
+    expect(normal.maxWords).toBeGreaterThan(easy.maxWords);
+    expect(hard.maxWords).toBe(3);
   });
 });

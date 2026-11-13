@@ -25,7 +25,13 @@ export const config = {
   words: { lengthSpread: 5 },
   pointsPerLetter: 10,
   typedBox: { height: 24, errorFlashMs: 150 },
-  menuInputDelayMs: 600,
+  // Picked in the menu. Harder: enemies spawn closer together and carry more words each.
+  levels: {
+    easy: { spawnIntervalScale: 1.3, maxWordsPerEnemy: 1 },
+    normal: { spawnIntervalScale: 1, maxWordsPerEnemy: 2 },
+    hard: { spawnIntervalScale: 0.8, maxWordsPerEnemy: 3 },
+  },
+  defaultLevel: 'normal',
   scores: { storageKey: 'loremIpsumCrasher.scores', maxEntries: 5 },
   difficulty: {
     // The second keyframe is the knee: every curve gets steeper after it.
@@ -49,3 +55,5 @@ export const config = {
     maxEnemySpeed: 80,
   },
 } as const;
+
+export type LevelKey = keyof typeof config.levels;

@@ -1,4 +1,4 @@
-import { config } from '../config';
+import { config, type LevelKey } from '../config';
 
 export interface ScoreEntry {
   score: number;
@@ -10,9 +10,11 @@ function isScoreEntry(value: unknown): value is ScoreEntry {
   return typeof entry?.score === 'number' && typeof entry.seconds === 'number';
 }
 
-export function loadScores(): ScoreEntry[] {
+/** One board per level: scores from different levels do not compare. */
+export function loadScores(level: LevelKey): ScoreEntry[] {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(config.scores.storageKey) ?? '[]');
+    const stored = localStorage.getItem(`${config.scores.storageKey}.${level}`);
+    const parsed: unknown = JSON.parse(stored ?? '[]');
     return Array.isArray(parsed) ? parsed.filter(isScoreEntry) : [];
   } catch {
     // Blocked storage or corrupt data: play on with an empty board.
@@ -20,12 +22,12 @@ export function loadScores(): ScoreEntry[] {
   }
 }
 
-export function saveScore(entry: ScoreEntry): ScoreEntry[] {
-  const scores = [...loadScores(), entry]
+export function saveScore(level: LevelKey, entry: ScoreEntry): ScoreEntry[] {
+  const scores = [...loadScores(level), entry]
     .sort((a, b) => b.score - a.score)
     .slice(0, config.scores.maxEntries);
   try {
-    localStorage.setItem(config.scores.storageKey, JSON.stringify(scores));
+    localStorage.setItem(`${config.scores.storageKey}.${level}`, JSON.stringify(scores));
   } catch {
     // Storage full or blocked: the caller still gets the list for this session.
   }

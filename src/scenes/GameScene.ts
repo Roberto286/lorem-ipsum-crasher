@@ -32,7 +32,7 @@ export class GameScene extends Phaser.Scene {
     // Phaser reuses the scene instance on restart: reset what the previous run left behind.
     this.enemies.clear();
     this.paused = false;
-    this.session = new GameSession(width / 2, this.playHeight / 2);
+    this.session = new GameSession(width / 2, this.playHeight / 2, this.registry.get('level'));
     this.player = new Player(this, width / 2, this.playHeight / 2);
     this.createHud();
     this.createBottomPanel();
@@ -162,7 +162,7 @@ export class GameScene extends Phaser.Scene {
 
   private endRun(): void {
     const run = { score: this.session.score, seconds: Math.floor(this.session.elapsedMs / 1000) };
-    saveScore(run);
+    saveScore(this.registry.get('level'), run);
     this.sound.play('gameOver');
     this.scene.start('MenuScene', run);
   }

@@ -27,6 +27,7 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     if (this.sys.game.device.os.desktop) {
+      this.registry.set('level', config.defaultLevel);
       this.scene.start('MenuScene');
       return;
     }
