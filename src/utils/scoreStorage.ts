@@ -23,6 +23,7 @@ export function loadScores(level: LevelKey): ScoreEntry[] {
 }
 
 export function saveScore(level: LevelKey, entry: ScoreEntry): ScoreEntry[] {
+  if (entry.score <= 0) return loadScores(level);
   const scores = [...loadScores(level), entry]
     .sort((a, b) => b.score - a.score)
     .slice(0, config.scores.maxEntries);

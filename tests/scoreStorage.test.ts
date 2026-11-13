@@ -17,7 +17,7 @@ describe('score storage', () => {
   it('keeps only the best scores, highest first', () => {
     stubStorage();
     const count = config.scores.maxEntries + 2;
-    const scores = Array.from({ length: count }, (_, index) => ((index * 7) % count) * 10);
+    const scores = Array.from({ length: count }, (_, index) => (((index * 3) % count) + 1) * 10);
 
     scores.forEach((score) => saveScore('normal', { score, seconds: 1 }));
 
@@ -32,6 +32,14 @@ describe('score storage', () => {
 
     expect(loadScores('easy')).toEqual([{ score: 10, seconds: 2 }]);
     expect(loadScores('hard')).toEqual([]);
+  });
+
+  it('keeps zero-point runs off the board', () => {
+    stubStorage();
+    saveScore('normal', { score: 10, seconds: 2 });
+
+    expect(saveScore('normal', { score: 0, seconds: 19 })).toEqual([{ score: 10, seconds: 2 }]);
+    expect(loadScores('normal')).toEqual([{ score: 10, seconds: 2 }]);
   });
 
   it('ignores corrupt stored data', () => {
