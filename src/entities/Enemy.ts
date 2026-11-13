@@ -1,37 +1,45 @@
 import * as Phaser from 'phaser';
 import { config } from '../config';
+import type { EnemyState } from '../utils/gameSession';
 import { addText } from '../utils/ui';
 
+/** Animation per number of words left: a demon shrinks as its words are shot off. */
+const demonKeys = ['imp', 'chort', 'bigDemon'];
+
 export class Enemy {
-  private readonly sprite: Phaser.GameObjects.Image;
+  private readonly sprite: Phaser.GameObjects.Sprite;
   private readonly label: Phaser.GameObjects.Text;
 
   constructor(
     private readonly scene: Phaser.Scene,
-    words: string[],
+    state: EnemyState,
   ) {
-    this.sprite = scene.add.image(0, 0, 'demon').setDepth(config.depths.enemy);
+    this.sprite = scene.add.sprite(0, 0, demonKeys[0]).setDepth(config.depths.enemy);
+    // The art faces right: flip the demons that walk in from the right.
+    this.sprite.setFlipX(Math.cos(state.angle) > 0);
     this.label = addText(scene, 0, 0, '', {
       backgroundColor: config.colors.labelBackground,
       padding: { x: 2, y: 2 },
     })
       .setOrigin(0.5, 1)
       .setDepth(config.depths.enemy);
-    this.setWords(words);
+    this.setWords(state.words);
   }
 
   /** Remaining words, one per line: the top one is typed next. */
   setWords(words: string[]): void {
+    this.sprite.play(demonKeys[Math.min(words.length, demonKeys.length) - 1]);
     this.label.setText(words.join('\n'));
   }
 
   /** The label is clamped inside the play area so the words are readable from the spawn edge. */
   moveTo(x: number, y: number, playWidth: number, playHeight: number): void {
     const halfWidth = this.label.width / 2;
+    const labelBottom = y - this.sprite.height / 2 - config.enemy.labelGap;
     this.sprite.setPosition(x, y);
     this.label.setPosition(
       Phaser.Math.Clamp(x, halfWidth, playWidth - halfWidth),
-      Phaser.Math.Clamp(y - config.enemy.labelOffset, this.label.height, playHeight),
+      Phaser.Math.Clamp(labelBottom, this.label.height, playHeight),
     );
   }
 

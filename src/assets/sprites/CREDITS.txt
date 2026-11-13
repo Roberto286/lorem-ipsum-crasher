@@ -1,0 +1,6 @@
+Sprites come from "16x16 DungeonTileset II" v1.7 by 0x72 (Robert Norenberg)
+https://0x72.itch.io/dungeontileset-ii
+License: CC0 1.0 Universal (public domain), https://creativecommons.org/publicdomain/zero/1.0/
+
+Changes: animation frames joined into horizontal strips.
+player.png is elf_m_idle with an open laptop drawn into its hands.

@@ -18,9 +18,17 @@ export const config = {
   // Everything else sits at depth 0: enemy words stay readable over the HUD, and enemies coming
   // from below stay hidden behind the bottom panel.
   depths: { hud: -2, enemy: -1 },
+  // Sheets are horizontal strips of animation frames.
+  sprites: {
+    player: { frameWidth: 20, frameHeight: 28 },
+    imp: { frameWidth: 16, frameHeight: 16 },
+    chort: { frameWidth: 16, frameHeight: 23 },
+    bigDemon: { frameWidth: 32, frameHeight: 36 },
+  },
+  animationFps: 8,
   player: { lives: 3, hitRadius: 12 },
   // typoSpeedBoost: speed multiplier for the targeted enemy each time its word is mistyped.
-  enemy: { vanishMs: 250, labelOffset: 10, typoSpeedBoost: 1.3 },
+  enemy: { vanishMs: 250, labelGap: 2, typoSpeedBoost: 1.3 },
   // Words are picked with a length between (max - lengthSpread) and max.
   words: { lengthSpread: 5 },
   pointsPerLetter: 10,

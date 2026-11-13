@@ -4,7 +4,9 @@ import gameOverUrl from '../assets/audio/gameover.wav';
 import hurtUrl from '../assets/audio/hurt.wav';
 import killUrl from '../assets/audio/kill.wav';
 import fontUrl from '../assets/font/PressStart2P-Regular.ttf';
-import demonUrl from '../assets/sprites/demon.png';
+import bigDemonUrl from '../assets/sprites/bigDemon.png';
+import chortUrl from '../assets/sprites/chort.png';
+import impUrl from '../assets/sprites/imp.png';
 import playerUrl from '../assets/sprites/player.png';
 import { config } from '../config';
 import { t } from '../utils/i18n';
@@ -16,8 +18,10 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image('player', playerUrl);
-    this.load.image('demon', demonUrl);
+    this.load.spritesheet('player', playerUrl, config.sprites.player);
+    this.load.spritesheet('imp', impUrl, config.sprites.imp);
+    this.load.spritesheet('chort', chortUrl, config.sprites.chort);
+    this.load.spritesheet('bigDemon', bigDemonUrl, config.sprites.bigDemon);
     this.load.audio('kill', killUrl);
     this.load.audio('error', errorUrl);
     this.load.audio('hurt', hurtUrl);
@@ -26,14 +30,18 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    if (this.sys.game.device.os.desktop) {
-      this.registry.set('level', config.defaultLevel);
-      this.scene.start('MenuScene');
+    if (!this.sys.game.device.os.desktop) {
+      // A typing game needs a physical keyboard: phones and tablets stop here.
+      addText(this, this.scale.width / 2, this.scale.height / 2, t('mobileUnsupported'), {
+        fontSize: `${config.font.titleSize}px`,
+      });
       return;
     }
-    // A typing game needs a physical keyboard: phones and tablets stop here.
-    addText(this, this.scale.width / 2, this.scale.height / 2, t('mobileUnsupported'), {
-      fontSize: `${config.font.titleSize}px`,
-    });
+    // Every sheet is one looping animation named after its texture.
+    for (const key of Object.keys(config.sprites)) {
+      this.anims.create({ key, frames: key, frameRate: config.animationFps, repeat: -1 });
+    }
+    this.registry.set('level', config.defaultLevel);
+    this.scene.start('MenuScene');
   }
 }
