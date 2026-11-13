@@ -43,6 +43,7 @@ export class GameScene extends Phaser.Scene {
       else if (key === 'Backspace') this.handleBackspace();
       else if (/^[a-z ]$/i.test(key)) this.handleLetter(key.toLowerCase());
     });
+    this.pauseOnFocusLoss();
   }
 
   update(_time: number, delta: number): void {
@@ -179,6 +180,18 @@ export class GameScene extends Phaser.Scene {
     this.pauseButton.setText(t(this.paused ? 'resume' : 'pause'));
     if (this.paused) this.tweens.pauseAll();
     else this.tweens.resumeAll();
+  }
+
+  private pauseOnFocusLoss(): void {
+    const pause = () => {
+      if (!this.paused) this.togglePause();
+    };
+    const { BLUR, HIDDEN } = Phaser.Core.Events;
+    this.game.events.on(BLUR, pause).on(HIDDEN, pause);
+    // game.events outlives the scene, and the scene instance is reused across runs.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
+      this.game.events.off(BLUR, pause).off(HIDDEN, pause),
+    );
   }
 
   private endRun(): void {
