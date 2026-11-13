@@ -47,7 +47,7 @@ export class GameScene extends Phaser.Scene {
     if (this.paused) return;
 
     const { spawned, reached } = this.session.update(delta);
-    for (const state of spawned) this.enemies.set(state.id, new Enemy(this, state.word));
+    for (const state of spawned) this.enemies.set(state.id, new Enemy(this, state.words));
     for (const state of reached) this.removeEnemy(state.id)?.destroy();
     if (reached.length > 0) this.showPlayerHit();
 
@@ -102,6 +102,9 @@ export class GameScene extends Phaser.Scene {
     const result = this.session.typeLetter(letter);
     if (result.kind === 'kill') {
       this.removeEnemy(result.enemy.id)?.vanish();
+      this.sound.play('kill');
+    } else if (result.kind === 'word') {
+      this.enemies.get(result.enemy.id)?.setWords(result.enemy.words);
       this.sound.play('kill');
     } else if (result.kind === 'error') {
       this.sound.play('error');

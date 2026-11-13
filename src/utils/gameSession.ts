@@ -5,7 +5,8 @@ import { pickWord } from './words';
 /** Position is polar, relative to the player: the scene turns it into screen coordinates. */
 export interface EnemyState {
   id: number;
-  word: string;
+  /** Remaining words, typed in order: the enemy dies with the last one. */
+  words: string[];
   angle: number;
   distance: number;
   speed: number;
@@ -15,7 +16,8 @@ export type TypeResult =
   | { kind: 'progress' }
   // enemy: the target that got faster, if a word was being typed.
   | { kind: 'error'; enemy?: EnemyState }
-  | { kind: 'kill'; enemy: EnemyState };
+  // word: a word was completed but the enemy has more; kill: it was the last one.
+  | { kind: 'word' | 'kill'; enemy: EnemyState; word: string };
 
 export interface UpdateResult {
   spawned: EnemyState[];
@@ -64,21 +66,23 @@ export class GameSession {
       return { kind: 'error', enemy };
     }
 
-    const completed = matches.find((enemy) => enemy.word === typed);
+    const completed = matches.find((enemy) => enemy.words[0] === typed);
     if (!completed) {
       this.typed = typed;
       return { kind: 'progress' };
     }
 
-    this.enemies = this.enemies.filter((enemy) => enemy !== completed);
-    this.score += completed.word.length * config.pointsPerLetter;
+    completed.words.shift();
+    this.score += typed.length * config.pointsPerLetter;
     this.typed = '';
-    return { kind: 'kill', enemy: completed };
+    if (completed.words.length > 0) return { kind: 'word', enemy: completed, word: typed };
+    this.enemies = this.enemies.filter((enemy) => enemy !== completed);
+    return { kind: 'kill', enemy: completed, word: typed };
   }
 
   private matching(prefix: string): EnemyState[] {
     return this.enemies
-      .filter((enemy) => enemy.word.startsWith(prefix))
+      .filter((enemy) => enemy.words[0].startsWith(prefix))
       .sort((a, b) => a.distance - b.distance);
   }
 
@@ -90,7 +94,7 @@ export class GameSession {
     this.enemies = this.enemies.filter((enemy) => !reached.includes(enemy));
     this.lives = Math.max(0, this.lives - reached.length);
     // The half-typed word may have just hit the player: do not leave a buffer nothing matches.
-    if (!this.enemies.some((enemy) => enemy.word.startsWith(this.typed))) this.typed = '';
+    if (this.matching(this.typed).length === 0) this.typed = '';
     return reached;
   }
 
@@ -103,11 +107,13 @@ export class GameSession {
     const angle = this.rng() * Math.PI * 2;
     const enemy: EnemyState = {
       id: this.nextId++,
-      word: pickWord(
-        difficulty.maxWordLength,
-        this.enemies.map((active) => active.word),
-        this.rng,
-      ),
+      words: [
+        pickWord(
+          difficulty.maxWordLength,
+          this.enemies.flatMap((active) => active.words),
+          this.rng,
+        ),
+      ],
       angle,
       // Distance from the center to the arena edge along this angle.
       distance: Math.min(

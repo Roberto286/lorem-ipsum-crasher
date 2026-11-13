@@ -8,23 +8,30 @@ export class Enemy {
 
   constructor(
     private readonly scene: Phaser.Scene,
-    word: string,
+    words: string[],
   ) {
     this.sprite = scene.add.image(0, 0, 'demon').setDepth(config.depths.enemy);
-    this.label = addText(scene, 0, 0, word, {
+    this.label = addText(scene, 0, 0, '', {
       backgroundColor: config.colors.labelBackground,
       padding: { x: 2, y: 2 },
-    }).setDepth(config.depths.enemy);
+    })
+      .setOrigin(0.5, 1)
+      .setDepth(config.depths.enemy);
+    this.setWords(words);
   }
 
-  /** The label is clamped inside the play area so the word is readable from the spawn edge. */
+  /** Remaining words, one per line: the top one is typed next. */
+  setWords(words: string[]): void {
+    this.label.setText(words.join('\n'));
+  }
+
+  /** The label is clamped inside the play area so the words are readable from the spawn edge. */
   moveTo(x: number, y: number, playWidth: number, playHeight: number): void {
     const halfWidth = this.label.width / 2;
-    const halfHeight = this.label.height / 2;
     this.sprite.setPosition(x, y);
     this.label.setPosition(
       Phaser.Math.Clamp(x, halfWidth, playWidth - halfWidth),
-      Phaser.Math.Clamp(y - config.enemy.labelOffset, halfHeight, playHeight - halfHeight),
+      Phaser.Math.Clamp(y - config.enemy.labelOffset, this.label.height, playHeight),
     );
   }
 

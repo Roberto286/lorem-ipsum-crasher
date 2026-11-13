@@ -9,7 +9,7 @@ const newSession = (rng = () => 0) => new GameSession(halfWidth, halfHeight, rng
 // Ids start high so they never collide with enemies the session spawns itself.
 const enemy = (word: string, overrides: Partial<EnemyState> = {}): EnemyState => ({
   id: 100,
-  word,
+  words: [word],
   angle: 0,
   distance: 100,
   speed: 0,
@@ -52,10 +52,30 @@ describe('typing', () => {
 
     const results = type(session, 'sit');
 
-    expect(results.at(-1)).toEqual({ kind: 'kill', enemy: enemy('sit') });
+    expect(results.at(-1)).toMatchObject({ kind: 'kill', word: 'sit', enemy: { id: 100 } });
     expect(session.enemies).toHaveLength(0);
     expect(session.score).toBe(3 * config.pointsPerLetter);
     expect(session.typed).toBe('');
+  });
+
+  it('takes one word at a time off a multi-word enemy until it dies', () => {
+    const session = newSession();
+    session.enemies.push(enemy('sit', { words: ['sit', 'amet'] }));
+
+    expect(type(session, 'sit').at(-1)).toMatchObject({ kind: 'word', word: 'sit' });
+    expect(session.enemies[0].words).toEqual(['amet']);
+    expect(session.typed).toBe('');
+
+    expect(type(session, 'amet').at(-1)).toMatchObject({ kind: 'kill', word: 'amet' });
+    expect(session.enemies).toHaveLength(0);
+    expect(session.score).toBe(7 * config.pointsPerLetter);
+  });
+
+  it('accepts only the first remaining word of an enemy', () => {
+    const session = newSession();
+    session.enemies.push(enemy('sit', { words: ['sit', 'amet'] }));
+
+    expect(type(session, 'a').at(-1)?.kind).toBe('error');
   });
 
   it('keeps a matching prefix in the typed buffer', () => {

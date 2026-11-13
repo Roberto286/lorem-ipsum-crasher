@@ -20,7 +20,7 @@ export const config = {
   depths: { hud: -2, enemy: -1 },
   player: { lives: 3, hitRadius: 12 },
   // typoSpeedBoost: speed multiplier for the targeted enemy each time its word is mistyped.
-  enemy: { vanishMs: 250, labelOffset: 14, typoSpeedBoost: 1.3 },
+  enemy: { vanishMs: 250, labelOffset: 10, typoSpeedBoost: 1.3 },
   // Words are picked with a length between (max - lengthSpread) and max.
   words: { lengthSpread: 5 },
   pointsPerLetter: 10,
