@@ -22,7 +22,7 @@ export class Enemy {
       padding: { x: 2, y: 2 },
     })
       .setOrigin(0.5, 1)
-      .setDepth(config.depths.enemy);
+      .setDepth(config.depths.enemyLabel);
     this.setWords(state.words);
   }
 
