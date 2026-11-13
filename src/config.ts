@@ -36,14 +36,17 @@ export const config = {
   // Words are picked with a length between (max - lengthSpread) and max.
   words: { lengthSpread: 5 },
   pointsPerLetter: 10,
-  typedBox: { height: 24, errorFlashMs: 150 },
+  // maxLetters: cap on the typed buffer, typos included, so it never overflows the box.
+  typedBox: { height: 24, errorFlashMs: 150, maxLetters: 40 },
   // Picked in the menu. Harder: enemies spawn closer together and carry more words each.
   // wholePhrase: the words form one phrase that must be typed in a single go, spaces included.
+  // erasableTypos: a wrong letter stays in the buffer until erased with Backspace; without it a
+  // wrong letter resets the buffer and speeds up the target.
   levels: {
-    easy: { spawnIntervalScale: 1.3, maxWordsPerEnemy: 1, wholePhrase: false },
-    normal: { spawnIntervalScale: 1, maxWordsPerEnemy: 2, wholePhrase: false },
-    hard: { spawnIntervalScale: 0.8, maxWordsPerEnemy: 3, wholePhrase: false },
-    hell: { spawnIntervalScale: 0.8, maxWordsPerEnemy: 3, wholePhrase: true },
+    easy: { spawnIntervalScale: 1.3, maxWordsPerEnemy: 1, wholePhrase: false, erasableTypos: true },
+    normal: { spawnIntervalScale: 1, maxWordsPerEnemy: 2, wholePhrase: false, erasableTypos: true },
+    hard: { spawnIntervalScale: 0.8, maxWordsPerEnemy: 3, wholePhrase: false, erasableTypos: true },
+    hell: { spawnIntervalScale: 0.8, maxWordsPerEnemy: 3, wholePhrase: true, erasableTypos: false },
   },
   defaultLevel: 'normal',
   scores: { storageKey: 'loremIpsumCrasher.scores', maxEntries: 5 },

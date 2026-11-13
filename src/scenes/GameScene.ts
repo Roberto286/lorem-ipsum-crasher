@@ -40,6 +40,7 @@ export class GameScene extends Phaser.Scene {
 
     listenForKeys(this, (key) => {
       if (key === 'Escape') this.togglePause();
+      else if (key === 'Backspace') this.handleBackspace();
       else if (/^[a-z ]$/i.test(key)) this.handleLetter(key.toLowerCase());
     });
   }
@@ -113,6 +114,8 @@ export class GameScene extends Phaser.Scene {
         if (kind === 'kill') enemy.vanish();
         else enemy.setWords(state.words);
       });
+    } else if (result.kind === 'typo') {
+      this.sound.play('error');
     } else if (result.kind === 'error') {
       this.sound.play('error');
       if (result.enemy) this.enemies.get(result.enemy.id)?.enrage();
@@ -121,6 +124,10 @@ export class GameScene extends Phaser.Scene {
         this.typedBox.setFillStyle(config.colors.panel),
       );
     }
+  }
+
+  private handleBackspace(): void {
+    if (!this.paused) this.session.eraseLetter();
   }
 
   private removeEnemy(id: number): Enemy | undefined {
@@ -152,13 +159,16 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drawHud(): void {
-    const { score, lives, elapsedMs, typed } = this.session;
+    const { score, lives, elapsedMs, typed, target } = this.session;
+    // Red while the buffer holds a typo: nothing can be killed until it is erased.
+    const typedColor = typed === '' || target ? config.colors.accent : config.colors.enraged;
     const status = [
       t('score', { value: score }),
       `${t('lives', { value: lives })}  ${t('time', { value: Math.floor(elapsedMs / 1000) })}`,
     ];
     this.hud.setText(status.join('\n'));
     this.typedText.setText(typed);
+    if (this.typedText.style.color !== typedColor) this.typedText.setColor(typedColor);
   }
 
   private togglePause(): void {

@@ -17,6 +17,8 @@ export interface EnemyState {
 
 export type TypeResult =
   | { kind: 'progress' }
+  // A wrong letter that stays in the buffer until it is erased.
+  | { kind: 'typo' }
   // enemy: the target that got faster, if a word was being typed.
   | { kind: 'error'; enemy?: EnemyState }
   // word: a word was completed but the enemy has more; kill: it was the last one.
@@ -65,12 +67,7 @@ export class GameSession {
     if (letter === ' ' && this.typed === '') return { kind: 'progress' };
     const typed = this.typed + letter;
     const matches = this.matching(typed);
-    if (matches.length === 0) {
-      const enemy = this.target;
-      if (enemy) enemy.speed *= config.enemy.typoSpeedBoost;
-      this.typed = '';
-      return { kind: 'error', enemy };
-    }
+    if (matches.length === 0) return this.mistype(typed);
 
     const completed = matches.find((enemy) => enemy.words[0] === typed);
     if (!completed) {
@@ -86,6 +83,26 @@ export class GameSession {
     return { kind: 'kill', enemy: completed, word: typed };
   }
 
+  /** Removes the last typed letter; strict levels have nothing to erase. */
+  eraseLetter(): void {
+    if (this.erasableTypos) this.typed = this.typed.slice(0, -1);
+  }
+
+  private get erasableTypos(): boolean {
+    return config.levels[this.level].erasableTypos;
+  }
+
+  private mistype(typed: string): TypeResult {
+    if (this.erasableTypos) {
+      if (typed.length <= config.typedBox.maxLetters) this.typed = typed;
+      return { kind: 'typo' };
+    }
+    const enemy = this.target;
+    if (enemy) enemy.speed *= config.enemy.typoSpeedBoost;
+    this.typed = '';
+    return { kind: 'error', enemy };
+  }
+
   private matching(prefix: string): EnemyState[] {
     return this.enemies
       .filter((enemy) => enemy.words[0].startsWith(prefix))
@@ -99,8 +116,10 @@ export class GameSession {
 
     this.enemies = this.enemies.filter((enemy) => !reached.includes(enemy));
     this.lives = Math.max(0, this.lives - reached.length);
-    // The half-typed word may have just hit the player: do not leave a buffer nothing matches.
-    if (this.matching(this.typed).length === 0) this.typed = '';
+    // The half-typed word may have just hit the player: do not leave its letters behind. A
+    // buffer holding a typo matched nobody to begin with, so it stays for the player to fix.
+    const wasTyped = reached.some((enemy) => enemy.words[0].startsWith(this.typed));
+    if (wasTyped && this.matching(this.typed).length === 0) this.typed = '';
     return reached;
   }
 

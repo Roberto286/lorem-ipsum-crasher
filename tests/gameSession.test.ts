@@ -88,7 +88,8 @@ describe('typing', () => {
     const session = newSession();
     session.enemies.push(enemy('sit', { words: ['sit', 'amet'] }));
 
-    expect(type(session, 'a').at(-1)?.kind).toBe('error');
+    expect(type(session, 'a').at(-1)?.kind).toBe('typo');
+    expect(session.enemies[0].words).toEqual(['sit', 'amet']);
   });
 
   it('keeps a matching prefix in the typed buffer', () => {
@@ -100,17 +101,30 @@ describe('typing', () => {
     expect(session.typed).toBe('si');
   });
 
-  it('clears the buffer on a typo so the word must be retyped from the start', () => {
+  it('keeps a typo in the buffer until it is erased, then the word can be finished', () => {
     const session = newSession();
     session.enemies.push(enemy('sit'));
 
-    expect(type(session, 'six').at(-1)?.kind).toBe('error');
-    expect(session.typed).toBe('');
+    expect(type(session, 'six').at(-1)).toEqual({ kind: 'typo' });
+    expect(session.typed).toBe('six');
 
-    expect(type(session, 't').at(-1)?.kind).toBe('error');
+    expect(type(session, 't').at(-1)?.kind).toBe('typo');
     expect(session.enemies).toHaveLength(1);
 
-    expect(type(session, 'sit').at(-1)?.kind).toBe('kill');
+    session.eraseLetter();
+    session.eraseLetter();
+    expect(session.typed).toBe('si');
+
+    expect(type(session, 't').at(-1)?.kind).toBe('kill');
+  });
+
+  it('stops growing the buffer at the letter cap', () => {
+    const session = newSession();
+    session.enemies.push(enemy('sit'));
+
+    type(session, 'x'.repeat(config.typedBox.maxLetters + 5));
+
+    expect(session.typed).toHaveLength(config.typedBox.maxLetters);
   });
 
   it('kills the closest enemy when two share a word', () => {
@@ -138,27 +152,14 @@ describe('typing', () => {
     expect(session.target?.id).toBe(100);
   });
 
-  it('speeds up the targeted enemy on a typo', () => {
+  it('speeds nobody up on a typo that can be erased', () => {
     const session = newSession();
-    const target = enemy('sit', { id: 100, speed: 10 });
-    const bystander = enemy('amet', { id: 101, speed: 10 });
-    session.enemies.push(target, bystander);
+    const target = enemy('sit', { speed: 10 });
+    session.enemies.push(target);
 
-    const result = type(session, 'sx').at(-1);
+    type(session, 'sx');
 
-    expect(result).toEqual({ kind: 'error', enemy: target });
-    expect(target.speed).toBe(10 * config.enemy.typoSpeedBoost);
-    expect(bystander.speed).toBe(10);
-  });
-
-  it('speeds nobody up when the first letter matches no word', () => {
-    const session = newSession();
-    const idle = enemy('sit', { speed: 10 });
-    session.enemies.push(idle);
-
-    type(session, 'x');
-
-    expect(idle.speed).toBe(10);
+    expect(target.speed).toBe(10);
   });
 });
 
@@ -192,6 +193,16 @@ describe('enemies', () => {
     session.update(16);
 
     expect(session.typed).toBe('');
+  });
+
+  it('leave a buffer with a typo alone when they were not being typed', () => {
+    const session = newSession();
+    session.enemies.push(enemy('sit', { id: 100 }), enemy('amet', { id: 101, distance: 0 }));
+    type(session, 'sx');
+
+    session.update(16);
+
+    expect(session.typed).toBe('sx');
   });
 
   it('end the game once the last life is gone', () => {
@@ -234,5 +245,51 @@ describe('hell level', () => {
 
     expect(type(session, ' ').at(-1)?.kind).toBe('progress');
     expect(type(session, 'sit').at(-1)?.kind).toBe('kill');
+  });
+
+  it('clears the buffer on a typo so the phrase must be retyped from the start', () => {
+    const session = newSession(() => 0, 'hell');
+    session.enemies.push(enemy('sit'));
+
+    expect(type(session, 'six').at(-1)?.kind).toBe('error');
+    expect(session.typed).toBe('');
+
+    expect(type(session, 't').at(-1)?.kind).toBe('error');
+    expect(session.enemies).toHaveLength(1);
+
+    expect(type(session, 'sit').at(-1)?.kind).toBe('kill');
+  });
+
+  it('speeds up the targeted enemy on a typo', () => {
+    const session = newSession(() => 0, 'hell');
+    const target = enemy('sit', { id: 100, speed: 10 });
+    const bystander = enemy('amet', { id: 101, speed: 10 });
+    session.enemies.push(target, bystander);
+
+    const result = type(session, 'sx').at(-1);
+
+    expect(result).toEqual({ kind: 'error', enemy: target });
+    expect(target.speed).toBe(10 * config.enemy.typoSpeedBoost);
+    expect(bystander.speed).toBe(10);
+  });
+
+  it('speeds nobody up when the first letter matches no word', () => {
+    const session = newSession(() => 0, 'hell');
+    const idle = enemy('sit', { speed: 10 });
+    session.enemies.push(idle);
+
+    type(session, 'x');
+
+    expect(idle.speed).toBe(10);
+  });
+
+  it('ignores backspace', () => {
+    const session = newSession(() => 0, 'hell');
+    session.enemies.push(enemy('sit'));
+    type(session, 'si');
+
+    session.eraseLetter();
+
+    expect(session.typed).toBe('si');
   });
 });
