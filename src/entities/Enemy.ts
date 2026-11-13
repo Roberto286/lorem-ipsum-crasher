@@ -10,12 +10,11 @@ export class Enemy {
     private readonly scene: Phaser.Scene,
     word: string,
   ) {
-    // Negative depth: drawn under the HUD and bottom panel although created after them.
-    this.sprite = scene.add.image(0, 0, 'demon').setDepth(-1);
+    this.sprite = scene.add.image(0, 0, 'demon').setDepth(config.depths.enemy);
     this.label = addText(scene, 0, 0, word, {
       backgroundColor: config.colors.labelBackground,
       padding: { x: 2, y: 2 },
-    }).setDepth(-1);
+    }).setDepth(config.depths.enemy);
   }
 
   /** The label is clamped inside the play area so the word is readable from the spawn edge. */

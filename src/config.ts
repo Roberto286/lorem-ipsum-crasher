@@ -15,6 +15,9 @@ export const config = {
     key: 0x3a2a4a,
     typedBoxBorder: 0xffe14d,
   },
+  // Everything else sits at depth 0: enemy words stay readable over the HUD, and enemies coming
+  // from below stay hidden behind the bottom panel.
+  depths: { hud: -2, enemy: -1 },
   player: { lives: 3, hitRadius: 12 },
   enemy: { vanishMs: 250, labelOffset: 14 },
   // Words are picked with a length between (max - lengthSpread) and max.

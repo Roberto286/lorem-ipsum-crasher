@@ -62,14 +62,15 @@ export class GameScene extends Phaser.Scene {
     // and never updates while the browser keeps the audio context locked.
     const soundLabel = () => t(this.registry.get('muted') ? 'soundOff' : 'soundOn');
 
-    this.hud = addText(this, 4, 4, '', { align: 'left' }).setOrigin(0);
+    this.hud = addText(this, 4, 4, '', { align: 'left' }).setOrigin(0).setDepth(config.depths.hud);
     this.pauseButton = addButton(this, right, 0, t('pause'), () => this.togglePause());
-    this.pauseButton.setOrigin(1, 0);
+    this.pauseButton.setOrigin(1, 0).setDepth(config.depths.hud);
     const soundButton = addButton(this, right, this.pauseButton.height, soundLabel(), () => {
       this.registry.toggle('muted');
       this.sound.mute = this.registry.get('muted');
       soundButton.setText(soundLabel());
-    }).setOrigin(1, 0);
+    });
+    soundButton.setOrigin(1, 0).setDepth(config.depths.hud);
     this.pausedText = addText(this, this.scale.width / 2, this.playHeight / 4, t('paused'), {
       color: config.colors.accent,
       fontSize: `${config.font.titleSize}px`,
