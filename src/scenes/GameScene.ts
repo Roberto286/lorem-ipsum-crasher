@@ -58,13 +58,16 @@ export class GameScene extends Phaser.Scene {
 
   private createHud(): void {
     const right = this.scale.width - 2;
-    const soundLabel = () => t(this.sound.mute ? 'soundOff' : 'soundOn');
+    // Mute state lives in the registry: sound.mute reads the audio graph, which lags the setter
+    // and never updates while the browser keeps the audio context locked.
+    const soundLabel = () => t(this.registry.get('muted') ? 'soundOff' : 'soundOn');
 
     this.hud = addText(this, 4, 4, '', { align: 'left' }).setOrigin(0);
     this.pauseButton = addButton(this, right, 0, t('pause'), () => this.togglePause());
     this.pauseButton.setOrigin(1, 0);
     const soundButton = addButton(this, right, this.pauseButton.height, soundLabel(), () => {
-      this.sound.mute = !this.sound.mute;
+      this.registry.toggle('muted');
+      this.sound.mute = this.registry.get('muted');
       soundButton.setText(soundLabel());
     }).setOrigin(1, 0);
     this.pausedText = addText(this, this.scale.width / 2, this.playHeight / 4, t('paused'), {
