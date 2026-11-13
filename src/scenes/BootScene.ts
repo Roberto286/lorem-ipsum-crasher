@@ -7,6 +7,8 @@ import fontUrl from '../assets/font/PressStart2P-Regular.ttf';
 import demonUrl from '../assets/sprites/demon.png';
 import playerUrl from '../assets/sprites/player.png';
 import { config } from '../config';
+import { t } from '../utils/i18n';
+import { addText } from '../utils/ui';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -24,6 +26,13 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.scene.start('MenuScene');
+    if (this.sys.game.device.os.desktop) {
+      this.scene.start('MenuScene');
+      return;
+    }
+    // A typing game needs a physical keyboard: phones and tablets stop here.
+    addText(this, this.scale.width / 2, this.scale.height / 2, t('mobileUnsupported'), {
+      fontSize: `${config.font.titleSize}px`,
+    });
   }
 }

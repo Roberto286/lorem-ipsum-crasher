@@ -4,7 +4,7 @@ import { Enemy } from '../entities/Enemy';
 import { Player } from '../entities/Player';
 import { GameSession } from '../utils/gameSession';
 import { t } from '../utils/i18n';
-import { addVirtualKeyboard, listenForKeys, virtualKeyboardHeight } from '../utils/letterInput';
+import { listenForKeys } from '../utils/keyboard';
 import { saveScore } from '../utils/scoreStorage';
 import { addButton, addText } from '../utils/ui';
 
@@ -27,10 +27,8 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
-    const touch = this.sys.game.device.input.touch;
-    const onLetter = (letter: string) => this.handleLetter(letter);
 
-    this.playHeight = height - config.typedBox.height - (touch ? virtualKeyboardHeight : 0);
+    this.playHeight = height - config.typedBox.height;
     // Phaser reuses the scene instance on restart: reset what the previous run left behind.
     this.enemies.clear();
     this.paused = false;
@@ -39,8 +37,10 @@ export class GameScene extends Phaser.Scene {
     this.createHud();
     this.createBottomPanel();
 
-    listenForKeys(this, onLetter, () => this.togglePause());
-    if (touch) addVirtualKeyboard(this, this.playHeight + config.typedBox.height, onLetter);
+    listenForKeys(this, (key) => {
+      if (key === 'Escape') this.togglePause();
+      else if (/^[a-z]$/i.test(key)) this.handleLetter(key.toLowerCase());
+    });
   }
 
   update(_time: number, delta: number): void {

@@ -6,7 +6,8 @@ const en = {
     'Lorem Ipsum was never filler text. It is a summoning spell. ' +
     'Developers abused it for decades. The demons are awake, and they want revenge.\n\n' +
     'Type their names to banish them.',
-  start: 'PRESS ENTER OR TAP TO START',
+  mobileUnsupported: 'This game needs a real keyboard.\n\nPlay it on a desktop computer.',
+  start: 'PRESS ENTER TO START',
   gameOver: 'GAME OVER',
   score: 'SCORE {value}',
   lives: 'LIVES {value}',

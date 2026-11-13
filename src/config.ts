@@ -3,7 +3,7 @@ export type Curve = readonly (readonly [number, number])[];
 
 export const config = {
   locale: 'en',
-  screen: { longSide: 480, shortSide: 270 },
+  screen: { width: 480, height: 270 },
   font: { family: 'Press Start 2P', size: 8, titleSize: 16 },
   colors: {
     background: '#1a1020',
@@ -12,7 +12,6 @@ export const config = {
     labelBackground: '#000000aa',
     panel: 0x0d0812,
     panelError: 0x8a1c1c,
-    key: 0x3a2a4a,
     typedBoxBorder: 0xffe14d,
   },
   // Everything else sits at depth 0: enemy words stay readable over the HUD, and enemies coming
@@ -24,7 +23,6 @@ export const config = {
   words: { lengthSpread: 5 },
   pointsPerLetter: 10,
   typedBox: { height: 24, errorFlashMs: 150 },
-  virtualKeyHeight: 26,
   menuInputDelayMs: 600,
   scores: { storageKey: 'loremIpsumCrasher.scores', maxEntries: 5 },
   difficulty: {
