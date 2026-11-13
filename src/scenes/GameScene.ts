@@ -130,6 +130,8 @@ export class GameScene extends Phaser.Scene {
 
   private drawEnemies(): void {
     const { x, y } = this.player;
+    const { target } = this.session;
+    if (target) this.player.face(target.angle);
     for (const state of this.session.enemies) {
       this.enemies
         .get(state.id)
