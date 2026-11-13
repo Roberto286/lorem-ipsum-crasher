@@ -7,7 +7,8 @@ import { addText } from '../utils/ui';
 const demonKeys = ['imp', 'chort', 'bigDemon'];
 
 export class Enemy {
-  private readonly sprite: Phaser.GameObjects.Sprite;
+  /** Public so a hurled word can home in on it. */
+  readonly sprite: Phaser.GameObjects.Sprite;
   private readonly label: Phaser.GameObjects.Text;
 
   constructor(

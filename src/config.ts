@@ -29,6 +29,8 @@ export const config = {
   player: { lives: 3, hitRadius: 12 },
   // typoSpeedBoost: speed multiplier for the targeted enemy each time its word is mistyped.
   enemy: { vanishMs: 250, labelGap: 2, typoSpeedBoost: 1.3 },
+  // The typed word flies from the hero to the demon before it takes effect.
+  projectile: { flightMs: 220, spins: 1 },
   // Words are picked with a length between (max - lengthSpread) and max.
   words: { lengthSpread: 5 },
   pointsPerLetter: 10,

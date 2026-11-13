@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { config } from '../config';
 import { Enemy } from '../entities/Enemy';
 import { Player } from '../entities/Player';
+import { hurlWord } from '../entities/wordProjectile';
 import { GameSession } from '../utils/gameSession';
 import { t } from '../utils/i18n';
 import { listenForKeys } from '../utils/keyboard';
@@ -100,12 +101,18 @@ export class GameScene extends Phaser.Scene {
     if (this.paused) return;
 
     const result = this.session.typeLetter(letter);
-    if (result.kind === 'kill') {
-      this.removeEnemy(result.enemy.id)?.vanish();
-      this.sound.play('kill');
-    } else if (result.kind === 'word') {
-      this.enemies.get(result.enemy.id)?.setWords(result.enemy.words);
-      this.sound.play('kill');
+    if (result.kind === 'kill' || result.kind === 'word') {
+      const { kind, enemy: state, word } = result;
+      // A killed enemy has already left the session: its sprite waits for the word to land.
+      const enemy = kind === 'kill' ? this.removeEnemy(state.id) : this.enemies.get(state.id);
+      if (!enemy) return;
+      hurlWord(this, word, this.player, enemy.sprite, () => {
+        // Gone already if it reached the player while the word was flying.
+        if (!enemy.sprite.active) return;
+        this.sound.play('kill');
+        if (kind === 'kill') enemy.vanish();
+        else enemy.setWords(state.words);
+      });
     } else if (result.kind === 'error') {
       this.sound.play('error');
       if (result.enemy) this.enemies.get(result.enemy.id)?.enrage();
