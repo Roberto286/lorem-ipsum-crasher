@@ -1,0 +1,36 @@
+import * as Phaser from 'phaser';
+import { config } from '../config';
+import { addText } from './ui';
+
+export type LetterHandler = (letter: string) => void;
+
+const keyRows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+
+export const virtualKeyboardHeight = keyRows.length * config.virtualKeyHeight;
+
+export function listenForLetters(scene: Phaser.Scene, onLetter: LetterHandler): void {
+  scene.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+    if (/^[a-z]$/i.test(event.key)) onLetter(event.key.toLowerCase());
+  });
+}
+
+/** On-screen keys for touch devices: the OS keyboard would cover half of the game. */
+export function addVirtualKeyboard(
+  scene: Phaser.Scene,
+  top: number,
+  onLetter: LetterHandler,
+): void {
+  const keyWidth = scene.scale.width / keyRows[0].length;
+  keyRows.forEach((row, rowIndex) => {
+    const left = (scene.scale.width - row.length * keyWidth) / 2;
+    [...row].forEach((letter, index) => {
+      const x = left + (index + 0.5) * keyWidth;
+      const y = top + (rowIndex + 0.5) * config.virtualKeyHeight;
+      scene.add
+        .rectangle(x, y, keyWidth - 2, config.virtualKeyHeight - 2, config.colors.key)
+        .setInteractive()
+        .on('pointerdown', () => onLetter(letter));
+      addText(scene, x, y, letter.toUpperCase());
+    });
+  });
+}
