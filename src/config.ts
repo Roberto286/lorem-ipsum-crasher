@@ -9,6 +9,7 @@ export const config = {
     background: '#1a1020',
     text: '#f4e9d8',
     accent: '#ffe14d',
+    enraged: '#ff5a5a',
     labelBackground: '#000000aa',
     panel: 0x0d0812,
     panelError: 0x8a1c1c,
@@ -18,7 +19,8 @@ export const config = {
   // from below stay hidden behind the bottom panel.
   depths: { hud: -2, enemy: -1 },
   player: { lives: 3, hitRadius: 12 },
-  enemy: { vanishMs: 250, labelOffset: 14 },
+  // typoSpeedBoost: speed multiplier for the targeted enemy each time its word is mistyped.
+  enemy: { vanishMs: 250, labelOffset: 14, typoSpeedBoost: 1.3 },
   // Words are picked with a length between (max - lengthSpread) and max.
   words: { lengthSpread: 5 },
   pointsPerLetter: 10,

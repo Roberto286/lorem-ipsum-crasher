@@ -105,6 +105,7 @@ export class GameScene extends Phaser.Scene {
       this.sound.play('kill');
     } else if (result.kind === 'error') {
       this.sound.play('error');
+      if (result.enemy) this.enemies.get(result.enemy.id)?.enrage();
       this.typedBox.setFillStyle(config.colors.panelError);
       this.time.delayedCall(config.typedBox.errorFlashMs, () =>
         this.typedBox.setFillStyle(config.colors.panel),

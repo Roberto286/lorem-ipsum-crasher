@@ -71,10 +71,10 @@ describe('typing', () => {
     const session = newSession();
     session.enemies.push(enemy('sit'));
 
-    expect(type(session, 'six').at(-1)).toEqual({ kind: 'error' });
+    expect(type(session, 'six').at(-1)?.kind).toBe('error');
     expect(session.typed).toBe('');
 
-    expect(type(session, 't').at(-1)).toEqual({ kind: 'error' });
+    expect(type(session, 't').at(-1)?.kind).toBe('error');
     expect(session.enemies).toHaveLength(1);
 
     expect(type(session, 'sit').at(-1)?.kind).toBe('kill');
@@ -88,6 +88,44 @@ describe('typing', () => {
     type(session, 'amet');
 
     expect(session.enemies.map((e) => e.id)).toEqual([100]);
+  });
+
+  it('targets the closest enemy matching what is typed', () => {
+    const session = newSession();
+    session.enemies.push(enemy('sit', { id: 100, distance: 90 }));
+    session.enemies.push(enemy('sed', { id: 101, distance: 40 }));
+    session.enemies.push(enemy('amet', { id: 102, distance: 10 }));
+
+    expect(session.target).toBeUndefined();
+
+    type(session, 's');
+    expect(session.target?.id).toBe(101);
+
+    type(session, 'i');
+    expect(session.target?.id).toBe(100);
+  });
+
+  it('speeds up the targeted enemy on a typo', () => {
+    const session = newSession();
+    const target = enemy('sit', { id: 100, speed: 10 });
+    const bystander = enemy('amet', { id: 101, speed: 10 });
+    session.enemies.push(target, bystander);
+
+    const result = type(session, 'sx').at(-1);
+
+    expect(result).toEqual({ kind: 'error', enemy: target });
+    expect(target.speed).toBe(10 * config.enemy.typoSpeedBoost);
+    expect(bystander.speed).toBe(10);
+  });
+
+  it('speeds nobody up when the first letter matches no word', () => {
+    const session = newSession();
+    const idle = enemy('sit', { speed: 10 });
+    session.enemies.push(idle);
+
+    type(session, 'x');
+
+    expect(idle.speed).toBe(10);
   });
 });
 

@@ -11,7 +11,11 @@ export interface EnemyState {
   speed: number;
 }
 
-export type TypeResult = { kind: 'progress' | 'error' } | { kind: 'kill'; enemy: EnemyState };
+export type TypeResult =
+  | { kind: 'progress' }
+  // enemy: the target that got faster, if a word was being typed.
+  | { kind: 'error'; enemy?: EnemyState }
+  | { kind: 'kill'; enemy: EnemyState };
 
 export interface UpdateResult {
   spawned: EnemyState[];
@@ -38,6 +42,11 @@ export class GameSession {
     return this.lives <= 0;
   }
 
+  /** The enemy the player is typing at: the closest one whose word starts with the buffer. */
+  get target(): EnemyState | undefined {
+    return this.typed === '' ? undefined : this.matching(this.typed)[0];
+  }
+
   update(deltaMs: number): UpdateResult {
     this.elapsedMs += deltaMs;
     const reached = this.advanceEnemies(deltaMs);
@@ -47,24 +56,30 @@ export class GameSession {
 
   typeLetter(letter: string): TypeResult {
     const typed = this.typed + letter;
-    const matches = this.enemies.filter((enemy) => enemy.word.startsWith(typed));
+    const matches = this.matching(typed);
     if (matches.length === 0) {
+      const enemy = this.target;
+      if (enemy) enemy.speed *= config.enemy.typoSpeedBoost;
       this.typed = '';
-      return { kind: 'error' };
+      return { kind: 'error', enemy };
     }
 
-    const [target] = matches
-      .filter((enemy) => enemy.word === typed)
-      .sort((a, b) => a.distance - b.distance);
-    if (!target) {
+    const completed = matches.find((enemy) => enemy.word === typed);
+    if (!completed) {
       this.typed = typed;
       return { kind: 'progress' };
     }
 
-    this.enemies = this.enemies.filter((enemy) => enemy !== target);
-    this.score += target.word.length * config.pointsPerLetter;
+    this.enemies = this.enemies.filter((enemy) => enemy !== completed);
+    this.score += completed.word.length * config.pointsPerLetter;
     this.typed = '';
-    return { kind: 'kill', enemy: target };
+    return { kind: 'kill', enemy: completed };
+  }
+
+  private matching(prefix: string): EnemyState[] {
+    return this.enemies
+      .filter((enemy) => enemy.word.startsWith(prefix))
+      .sort((a, b) => a.distance - b.distance);
   }
 
   private advanceEnemies(deltaMs: number): EnemyState[] {

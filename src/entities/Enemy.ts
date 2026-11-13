@@ -28,6 +28,11 @@ export class Enemy {
     );
   }
 
+  /** Marks an enemy that got faster after a typo on its word. */
+  enrage(): void {
+    this.label.setColor(config.colors.enraged);
+  }
+
   vanish(): void {
     this.scene.tweens.add({
       targets: [this.sprite, this.label],
