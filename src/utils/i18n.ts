@@ -12,6 +12,7 @@ const en = {
   easy: 'EASY',
   normal: 'NORMAL',
   hard: 'HARD',
+  hell: 'HELL',
   gameOver: 'GAME OVER',
   score: 'SCORE {value}',
   lives: 'LIVES {value}',

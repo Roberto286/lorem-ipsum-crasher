@@ -39,7 +39,7 @@ export class GameScene extends Phaser.Scene {
 
     listenForKeys(this, (key) => {
       if (key === 'Escape') this.togglePause();
-      else if (/^[a-z]$/i.test(key)) this.handleLetter(key.toLowerCase());
+      else if (/^[a-z ]$/i.test(key)) this.handleLetter(key.toLowerCase());
     });
   }
 

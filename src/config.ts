@@ -34,10 +34,12 @@ export const config = {
   pointsPerLetter: 10,
   typedBox: { height: 24, errorFlashMs: 150 },
   // Picked in the menu. Harder: enemies spawn closer together and carry more words each.
+  // wholePhrase: the words form one phrase that must be typed in a single go, spaces included.
   levels: {
-    easy: { spawnIntervalScale: 1.3, maxWordsPerEnemy: 1 },
-    normal: { spawnIntervalScale: 1, maxWordsPerEnemy: 2 },
-    hard: { spawnIntervalScale: 0.8, maxWordsPerEnemy: 3 },
+    easy: { spawnIntervalScale: 1.3, maxWordsPerEnemy: 1, wholePhrase: false },
+    normal: { spawnIntervalScale: 1, maxWordsPerEnemy: 2, wholePhrase: false },
+    hard: { spawnIntervalScale: 0.8, maxWordsPerEnemy: 3, wholePhrase: false },
+    hell: { spawnIntervalScale: 0.8, maxWordsPerEnemy: 3, wholePhrase: true },
   },
   defaultLevel: 'normal',
   scores: { storageKey: 'loremIpsumCrasher.scores', maxEntries: 5 },

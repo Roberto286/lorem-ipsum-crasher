@@ -5,7 +5,10 @@ import { pickWord } from './words';
 /** Position is polar, relative to the player: the scene turns it into screen coordinates. */
 export interface EnemyState {
   id: number;
-  /** Remaining words, typed in order: the enemy dies with the last one. */
+  /**
+   * Remaining texts, typed in order: the enemy dies with the last one.
+   * One word each, or a single space-separated phrase on whole-phrase levels.
+   */
   words: string[];
   angle: number;
   distance: number;
@@ -58,6 +61,8 @@ export class GameSession {
   }
 
   typeLetter(letter: string): TypeResult {
+    // A space only means something inside a phrase: between words it is habit, not a typo.
+    if (letter === ' ' && this.typed === '') return { kind: 'progress' };
     const typed = this.typed + letter;
     const matches = this.matching(typed);
     if (matches.length === 0) {
@@ -106,16 +111,17 @@ export class GameSession {
     const difficulty = difficultyAt(this.elapsedMs / 1000, this.level);
     this.untilSpawnMs += difficulty.spawnIntervalMs;
     const angle = this.rng() * Math.PI * 2;
-    const words = this.enemies.flatMap((active) => active.words);
+    const taken = this.enemies.flatMap((active) => active.words);
     const wordCount = 1 + Math.floor(this.rng() * difficulty.maxWords);
+    // Each pick joins the list the next one must avoid, the enemy's own words included.
+    const words = Array.from({ length: wordCount }, () => {
+      const word = pickWord(difficulty.maxWordLength, taken, this.rng);
+      taken.push(word);
+      return word;
+    });
     const enemy: EnemyState = {
       id: this.nextId++,
-      // Each pick joins the list the next one must avoid, the enemy's own words included.
-      words: Array.from({ length: wordCount }, () => {
-        const word = pickWord(difficulty.maxWordLength, words, this.rng);
-        words.push(word);
-        return word;
-      }),
+      words: config.levels[this.level].wholePhrase ? [words.join(' ')] : words,
       angle,
       // Distance from the center to the arena edge along this angle.
       distance: Math.min(

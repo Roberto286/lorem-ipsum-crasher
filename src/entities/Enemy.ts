@@ -26,9 +26,11 @@ export class Enemy {
     this.setWords(state.words);
   }
 
-  /** Remaining words, one per line: the top one is typed next. */
+  /** Remaining texts, one per line: the top one is typed next. */
   setWords(words: string[]): void {
-    this.sprite.play(demonKeys[Math.min(words.length, demonKeys.length) - 1]);
+    // Counted across phrases too, so a three-word phrase is still a big demon.
+    const wordCount = words.join(' ').split(' ').length;
+    this.sprite.play(demonKeys[Math.min(wordCount, demonKeys.length) - 1]);
     this.label.setText(words.join('\n'));
   }
 

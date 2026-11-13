@@ -206,3 +206,33 @@ describe('enemies', () => {
     expect(session.lives).toBe(0);
   });
 });
+
+describe('hell level', () => {
+  it('spawns each enemy with one whole phrase of up to three words', () => {
+    let seed = 1;
+    const session = newSession(() => (seed = (seed * 16807) % 2147483647) / 2147483647, 'hell');
+    const spawned = Array.from({ length: 200 }, () => session.update(5000).spawned[0]);
+    const phraseLengths = spawned.map((enemy) => enemy.words[0].split(' ').length);
+
+    expect(spawned.every((enemy) => enemy.words.length === 1)).toBe(true);
+    expect(new Set(phraseLengths)).toEqual(new Set([1, 2, 3]));
+  });
+
+  it('kills only when the whole phrase is typed, spaces included', () => {
+    const session = newSession();
+    session.enemies.push(enemy('sit amet'));
+
+    expect(type(session, 'sit').at(-1)?.kind).toBe('progress');
+    expect(session.enemies[0].words).toEqual(['sit amet']);
+
+    expect(type(session, ' amet').at(-1)).toMatchObject({ kind: 'kill', word: 'sit amet' });
+  });
+
+  it('ignores a space typed before any letter', () => {
+    const session = newSession();
+    session.enemies.push(enemy('sit'));
+
+    expect(type(session, ' ').at(-1)?.kind).toBe('progress');
+    expect(type(session, 'sit').at(-1)?.kind).toBe('kill');
+  });
+});
