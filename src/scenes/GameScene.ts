@@ -21,6 +21,8 @@ export class GameScene extends Phaser.Scene {
   private typedText!: Phaser.GameObjects.Text;
   private playHeight = 0;
   private paused = false;
+  // Set while the resume countdown runs; the game stays paused until it ends.
+  private resumeTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
     super('GameScene');
@@ -33,6 +35,7 @@ export class GameScene extends Phaser.Scene {
     // Phaser reuses the scene instance on restart: reset what the previous run left behind.
     this.enemies.clear();
     this.paused = false;
+    this.resumeTimer = undefined;
     this.session = new GameSession(width / 2, this.playHeight / 2, this.registry.get('level'));
     this.player = new Player(this, width / 2, this.playHeight / 2);
     this.createHud();
@@ -175,17 +178,46 @@ export class GameScene extends Phaser.Scene {
   }
 
   private togglePause(): void {
-    this.paused = !this.paused;
-    this.pausedText.setVisible(this.paused);
-    this.pauseButton.setText(t(this.paused ? 'resume' : 'pause'));
-    if (this.paused) this.tweens.pauseAll();
-    else this.tweens.resumeAll();
+    if (this.paused && !this.resumeTimer) this.startResumeCountdown();
+    else this.pause();
+  }
+
+  /** Also cancels a running resume countdown. */
+  private pause(): void {
+    this.resumeTimer?.remove();
+    this.resumeTimer = undefined;
+    this.paused = true;
+    this.pausedText.setText(t('paused')).setVisible(true);
+    this.pauseButton.setText(t('resume'));
+    this.tweens.pauseAll();
+  }
+
+  // Scene clock, not a tween: tweens stay paused until the countdown ends.
+  private startResumeCountdown(): void {
+    let secondsLeft: number = config.pause.resumeCountdownSeconds;
+    this.pausedText.setText(String(secondsLeft));
+    // The button cancels the countdown, which pauses again.
+    this.pauseButton.setText(t('pause'));
+    this.resumeTimer = this.time.addEvent({
+      delay: 1000,
+      repeat: secondsLeft - 1,
+      callback: () => {
+        secondsLeft -= 1;
+        if (secondsLeft > 0) this.pausedText.setText(String(secondsLeft));
+        else this.resume();
+      },
+    });
+  }
+
+  private resume(): void {
+    this.resumeTimer = undefined;
+    this.paused = false;
+    this.pausedText.setVisible(false);
+    this.tweens.resumeAll();
   }
 
   private pauseOnFocusLoss(): void {
-    const pause = () => {
-      if (!this.paused) this.togglePause();
-    };
+    const pause = () => this.pause();
     const { BLUR, HIDDEN } = Phaser.Core.Events;
     this.game.events.on(BLUR, pause).on(HIDDEN, pause);
     // game.events outlives the scene, and the scene instance is reused across runs.

@@ -33,6 +33,8 @@ export const config = {
   // The typed word flies from the hero to the demon before it takes effect.
   projectile: { flightMs: 220, spins: 1 },
   intro: { fadeMs: 400 },
+  // Resuming shows a countdown first, so the player can find the keys again.
+  pause: { resumeCountdownSeconds: 3 },
   // Words are picked with a length between (max - lengthSpread) and max.
   words: { lengthSpread: 5 },
   pointsPerLetter: 10,
