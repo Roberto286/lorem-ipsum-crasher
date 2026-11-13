@@ -152,6 +152,24 @@ describe('typing', () => {
     expect(session.target?.id).toBe(100);
   });
 
+  it('lists every enemy whose next word starts with the buffer, whatever its distance', () => {
+    const session = newSession();
+    session.enemies.push(enemy('sit', { id: 100, distance: 90 }));
+    session.enemies.push(enemy('sed', { id: 101, distance: 40 }));
+    session.enemies.push(enemy('amet', { id: 102, distance: 10, words: ['amet', 'sit'] }));
+
+    expect(session.matches).toEqual([]);
+
+    type(session, 's');
+    expect(session.matches.map((e) => e.id)).toEqual([101, 100]);
+
+    type(session, 'i');
+    expect(session.matches.map((e) => e.id)).toEqual([100]);
+
+    type(session, 'x');
+    expect(session.matches).toEqual([]);
+  });
+
   it('speeds nobody up on a typo that can be erased', () => {
     const session = newSession();
     const target = enemy('sit', { speed: 10 });

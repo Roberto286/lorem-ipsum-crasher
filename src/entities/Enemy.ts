@@ -10,18 +10,24 @@ export class Enemy {
   /** Public so a hurled word can home in on it. */
   readonly sprite: Phaser.GameObjects.Sprite;
   private readonly label: Phaser.GameObjects.Text;
+  /** Drawn over the label: the typed letters of the top word, every other glyph blank. */
+  private readonly typedLetters: Phaser.GameObjects.Text;
 
   constructor(
     private readonly scene: Phaser.Scene,
-    state: EnemyState,
+    private readonly state: EnemyState,
   ) {
     this.sprite = scene.add.sprite(0, 0, demonKeys[0]).setDepth(config.depths.enemy);
     // The art faces right: flip the demons that walk in from the right.
     this.sprite.setFlipX(Math.cos(state.angle) > 0);
+    const padding = { x: 2, y: 2 };
     this.label = addText(scene, 0, 0, '', {
       backgroundColor: config.colors.labelBackground,
-      padding: { x: 2, y: 2 },
+      padding,
     })
+      .setOrigin(0.5, 1)
+      .setDepth(config.depths.enemyLabel);
+    this.typedLetters = addText(scene, 0, 0, '', { color: config.colors.accent, padding })
       .setOrigin(0.5, 1)
       .setDepth(config.depths.enemyLabel);
     this.setWords(state.words);
@@ -35,6 +41,17 @@ export class Enemy {
     this.label.setText(words.join('\n'));
   }
 
+  /** Lights up the first typed letters of the top word. */
+  highlight(letters: number): void {
+    const shown = this.label.text;
+    // The label lags the session while a hurled word is in flight: its top word is not the
+    // one being typed any more.
+    const count = shown === this.state.words.join('\n') ? letters : 0;
+    // Same text and layout as the label, so the monospace glyphs land exactly on its own.
+    const blanked = shown.slice(count).replace(/[^\n]/g, ' ');
+    this.typedLetters.setText(shown.slice(0, count) + blanked).setVisible(count > 0);
+  }
+
   /** The label is clamped inside the play area so the words are readable from the spawn edge. */
   moveTo(x: number, y: number, playWidth: number, playHeight: number): void {
     const halfWidth = this.label.width / 2;
@@ -44,6 +61,7 @@ export class Enemy {
       Phaser.Math.Clamp(x, halfWidth, playWidth - halfWidth),
       Phaser.Math.Clamp(labelBottom, this.label.height, playHeight),
     );
+    this.typedLetters.setPosition(this.label.x, this.label.y);
   }
 
   /** Marks an enemy that got faster after a typo on its word. */
@@ -53,7 +71,7 @@ export class Enemy {
 
   vanish(): void {
     this.scene.tweens.add({
-      targets: [this.sprite, this.label],
+      targets: [this.sprite, this.label, this.typedLetters],
       alpha: 0,
       scale: 2,
       duration: config.enemy.vanishMs,
@@ -64,5 +82,6 @@ export class Enemy {
   destroy(): void {
     this.sprite.destroy();
     this.label.destroy();
+    this.typedLetters.destroy();
   }
 }

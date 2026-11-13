@@ -50,9 +50,14 @@ export class GameSession {
     return this.lives <= 0;
   }
 
-  /** The enemy the player is typing at: the closest one whose word starts with the buffer. */
+  /** Every enemy whose next word starts with the buffer, closest first. */
+  get matches(): EnemyState[] {
+    return this.typed === '' ? [] : this.matching(this.typed);
+  }
+
+  /** The enemy the player is typing at: the closest match. */
   get target(): EnemyState | undefined {
-    return this.typed === '' ? undefined : this.matching(this.typed)[0];
+    return this.matches[0];
   }
 
   update(deltaMs: number): UpdateResult {

@@ -107,6 +107,7 @@ export class GameScene extends Phaser.Scene {
       // A killed enemy has already left the session: its sprite waits for the word to land.
       const enemy = kind === 'kill' ? this.removeEnemy(state.id) : this.enemies.get(state.id);
       if (!enemy) return;
+      enemy.highlight(0);
       hurlWord(this, word, this.player, enemy.sprite, () => {
         // Gone already if it reached the player while the word was flying.
         if (!enemy.sprite.active) return;
@@ -144,17 +145,18 @@ export class GameScene extends Phaser.Scene {
 
   private drawEnemies(): void {
     const { x, y } = this.player;
-    const { target } = this.session;
+    const { target, matches, typed } = this.session;
     if (target) this.player.face(target.angle);
     for (const state of this.session.enemies) {
-      this.enemies
-        .get(state.id)
-        ?.moveTo(
-          x + Math.cos(state.angle) * state.distance,
-          y + Math.sin(state.angle) * state.distance,
-          this.scale.width,
-          this.playHeight,
-        );
+      const enemy = this.enemies.get(state.id);
+      if (!enemy) continue;
+      enemy.moveTo(
+        x + Math.cos(state.angle) * state.distance,
+        y + Math.sin(state.angle) * state.distance,
+        this.scale.width,
+        this.playHeight,
+      );
+      enemy.highlight(matches.includes(state) ? typed.length : 0);
     }
   }
 
