@@ -13,6 +13,7 @@ export const config = {
     panel: 0x0d0812,
     panelError: 0x8a1c1c,
     key: 0x3a2a4a,
+    typedBoxBorder: 0xffe14d,
   },
   player: { lives: 3, hitRadius: 12 },
   enemy: { vanishMs: 250, labelOffset: 14 },
