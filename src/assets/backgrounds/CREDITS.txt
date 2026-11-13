@@ -1,0 +1,8 @@
+arena.jpg is "Traffic at night" by Ferdinand Stöhr (Unsplash, 2017-01-07): a drone view of an
+intersection at night in Vancouver, Canada.
+https://commons.wikimedia.org/wiki/File:Traffic_at_night_(Unsplash).jpg
+https://unsplash.com/photos/DHLUEzpQ_sA
+License: CC0 1.0 Universal (public domain), https://creativecommons.org/publicdomain/zero/1.0/
+
+Changes: cropped to 16:9 around the crossing, resized to 480x270, desaturated and darkened so
+sprites and text stay readable on top.

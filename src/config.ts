@@ -18,7 +18,7 @@ export const config = {
   },
   // Everything else sits at depth 0: enemy words stay readable over the HUD and over other
   // demons, and enemies coming from below stay hidden behind the bottom panel.
-  depths: { hud: -3, enemy: -2, enemyLabel: -1 },
+  depths: { backdrop: -4, hud: -3, enemy: -2, enemyLabel: -1 },
   // Sheets are horizontal strips of animation frames.
   sprites: {
     player: { frameWidth: 20, frameHeight: 28 },

@@ -3,6 +3,7 @@ import errorUrl from '../assets/audio/error.wav';
 import gameOverUrl from '../assets/audio/gameover.wav';
 import hurtUrl from '../assets/audio/hurt.wav';
 import killUrl from '../assets/audio/kill.wav';
+import backdropUrl from '../assets/backgrounds/arena.jpg';
 import fontUrl from '../assets/font/PressStart2P-Regular.ttf';
 import bigDemonUrl from '../assets/sprites/bigDemon.png';
 import chortUrl from '../assets/sprites/chort.png';
@@ -22,6 +23,7 @@ export class BootScene extends Phaser.Scene {
     this.load.spritesheet('imp', impUrl, config.sprites.imp);
     this.load.spritesheet('chort', chortUrl, config.sprites.chort);
     this.load.spritesheet('bigDemon', bigDemonUrl, config.sprites.bigDemon);
+    this.load.image('backdrop', backdropUrl);
     this.load.audio('kill', killUrl);
     this.load.audio('error', errorUrl);
     this.load.audio('hurt', hurtUrl);
