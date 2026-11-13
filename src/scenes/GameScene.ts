@@ -4,7 +4,7 @@ import { Enemy } from '../entities/Enemy';
 import { Player } from '../entities/Player';
 import { GameSession } from '../utils/gameSession';
 import { t } from '../utils/i18n';
-import { addVirtualKeyboard, listenForLetters, virtualKeyboardHeight } from '../utils/letterInput';
+import { addVirtualKeyboard, listenForKeys, virtualKeyboardHeight } from '../utils/letterInput';
 import { saveScore } from '../utils/scoreStorage';
 import { addButton, addText } from '../utils/ui';
 
@@ -39,9 +39,8 @@ export class GameScene extends Phaser.Scene {
     this.createHud();
     this.createBottomPanel();
 
-    listenForLetters(this, onLetter);
+    listenForKeys(this, onLetter, () => this.togglePause());
     if (touch) addVirtualKeyboard(this, this.playHeight + config.typedBox.height, onLetter);
-    this.input.keyboard?.on('keydown-ESC', () => this.togglePause());
   }
 
   update(_time: number, delta: number): void {

@@ -8,10 +8,22 @@ const keyRows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 
 export const virtualKeyboardHeight = keyRows.length * config.virtualKeyHeight;
 
-export function listenForLetters(scene: Phaser.Scene, onLetter: LetterHandler): void {
-  scene.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
-    if (/^[a-z]$/i.test(event.key)) onLetter(event.key.toLowerCase());
-  });
+export function listenForKeys(
+  scene: Phaser.Scene,
+  onLetter: LetterHandler,
+  onPause: () => void,
+): void {
+  // Native listener: Phaser's keyboard plugin re-dispatches earlier keys when several key events
+  // land in one frame, which types phantom letters on slow frames.
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.repeat) return;
+    if (event.key === 'Escape') onPause();
+    else if (/^[a-z]$/i.test(event.key)) onLetter(event.key.toLowerCase());
+  };
+  window.addEventListener('keydown', onKeyDown);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
+    window.removeEventListener('keydown', onKeyDown),
+  );
 }
 
 /** On-screen keys for touch devices: the OS keyboard would cover half of the game. */
