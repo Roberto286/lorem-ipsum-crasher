@@ -41,7 +41,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private introText(lastRun: Partial<ScoreEntry>): string {
-    if (lastRun.score === undefined) return t('lore');
+    if (lastRun.score === undefined) return t('howToPlay');
     return [
       t('gameOver'),
       '',

@@ -9,6 +9,7 @@ export const config = {
     background: '#1a1020',
     text: '#f4e9d8',
     accent: '#ffe14d',
+    dim: '#6b5a7a',
     enraged: '#ff5a5a',
     labelBackground: '#000000aa',
     panel: 0x0d0812,
@@ -31,6 +32,7 @@ export const config = {
   enemy: { vanishMs: 250, labelGap: 2, typoSpeedBoost: 1.3 },
   // The typed word flies from the hero to the demon before it takes effect.
   projectile: { flightMs: 220, spins: 1 },
+  intro: { fadeMs: 400 },
   // Words are picked with a length between (max - lengthSpread) and max.
   words: { lengthSpread: 5 },
   pointsPerLetter: 10,

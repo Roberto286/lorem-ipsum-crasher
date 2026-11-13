@@ -2,10 +2,16 @@ import { config } from '../config';
 
 const en = {
   title: 'LOREM IPSUM CRASHER',
-  lore:
-    'Lorem Ipsum was never filler text. It is a summoning spell. ' +
-    'Developers abused it for decades. The demons are awake, and they want revenge.\n\n' +
-    'Type their names to banish them.',
+  intro1:
+    'Lorem ipsum dolor sit amet. For centuries everyone took it for filler text. ' +
+    'It is a summoning spell.',
+  intro2:
+    'Developers pasted it into every mockup, template and landing page. ' +
+    'Billions of invocations.',
+  intro3: 'The demons are awake. And they are done being placeholders.',
+  intro4: 'One dev is still online. Type their names to banish them.',
+  introHint: 'ENTER: NEXT   ESC: SKIP',
+  howToPlay: 'Type the demons away before they reach you.',
   mobileUnsupported: 'This game needs a real keyboard.\n\nPlay it on a desktop computer.',
   start: 'PRESS ENTER TO START',
   difficulty: 'DIFFICULTY  < {level} >',

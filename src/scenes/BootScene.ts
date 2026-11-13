@@ -42,6 +42,6 @@ export class BootScene extends Phaser.Scene {
       this.anims.create({ key, frames: key, frameRate: config.animationFps, repeat: -1 });
     }
     this.registry.set('level', config.defaultLevel);
-    this.scene.start('MenuScene');
+    this.scene.start('IntroScene');
   }
 }
