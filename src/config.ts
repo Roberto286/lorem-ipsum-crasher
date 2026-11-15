@@ -31,7 +31,9 @@ export const config = {
   music: { volume: 0.4 },
   player: { lives: 3, hitRadius: 12 },
   // typoSpeedBoost: speed multiplier for the targeted enemy each time its word is mistyped.
-  enemy: { vanishMs: 250, labelGap: 2, typoSpeedBoost: 1.3 },
+  // spawnBehindPanels: pixels past the play band where top and bottom demons start, hidden by
+  // the hud strip and the typed box, so they take as long to arrive as before the strip existed.
+  enemy: { vanishMs: 250, labelGap: 2, typoSpeedBoost: 1.3, spawnBehindPanels: 12 },
   // The typed word flies from the hero to the demon before it takes effect.
   projectile: { flightMs: 220, spins: 1 },
   // Cutscene pictures live in the top pictureRatio of the screen (caption and hint sit below)

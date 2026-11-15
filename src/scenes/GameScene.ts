@@ -39,7 +39,11 @@ export class GameScene extends Phaser.Scene {
     this.enemies.clear();
     this.paused = false;
     this.resumeTimer = undefined;
-    this.session = new GameSession(width / 2, this.playHeight / 2, this.registry.get('level'));
+    this.session = new GameSession(
+      width / 2,
+      this.playHeight / 2 + config.enemy.spawnBehindPanels,
+      this.registry.get('level'),
+    );
     this.add.image(0, 0, 'backdrop').setOrigin(0).setDepth(config.depths.backdrop);
     this.player = new Player(this, width / 2, this.playTop + this.playHeight / 2);
     this.createHud();
