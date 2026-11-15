@@ -32,7 +32,9 @@ export const config = {
   enemy: { vanishMs: 250, labelGap: 2, typoSpeedBoost: 1.3 },
   // The typed word flies from the hero to the demon before it takes effect.
   projectile: { flightMs: 220, spins: 1 },
-  intro: { fadeMs: 400 },
+  // Cutscene pictures live in the top pictureRatio of the screen (caption and hint sit below)
+  // and drift from one camera look to another over moveMs, with a Phaser ease name.
+  intro: { fadeMs: 400, moveMs: 7000, moveEase: 'Sine.easeInOut', pictureRatio: 0.7 },
   // Resuming shows a countdown first, so the player can find the keys again.
   pause: { resumeCountdownSeconds: 3 },
   // Words are picked with a length between (max - lengthSpread) and max.
