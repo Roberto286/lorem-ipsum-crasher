@@ -20,7 +20,8 @@ listenForKeys (utils/keyboard.ts)
   → GameScene.handleLetter
   → GameSession.typeLetter → TypeResult
       'progress'      buffer grew
-      'error'         typo: target speeds up (config.enemy.typoSpeedBoost), enrages, box flashes
+      'typo'          levels with erasableTypos: wrong letter stays in the buffer, Backspace erases it
+      'error'         hell only: buffer cleared, target speeds up (config.enemy.typoSpeedBoost), enrages
       'word' | 'kill' hurlWord (entities/wordProjectile.ts) → onHit → Enemy.setWords / Enemy.vanish
 ```
 
@@ -32,20 +33,25 @@ GameScene.update → session.update(delta) → { spawned, reached }
 session.isOver → endRun → saveScore → scene.start('MenuScene', run)
 ```
 
-Scene order (`src/main.ts`): `BootScene` (asset loading, animations, desktop check) → `IntroScene` (cutscene pages) → `MenuScene` (level picker, high scores, also the game-over screen via `create(lastRun)`) → `GameScene`.
+Scene order (`src/main.ts`): `BootScene` (asset loading, animations, desktop check, starts the music loop) → `IntroScene` (cutscene pages; each page has a camera `move`, a second camera keeps caption and hint fixed) → `MenuScene` (level picker, high scores, also the game-over screen via `create(lastRun)`) → `GameScene`.
 
-Cross-scene state lives in the Phaser `registry`: `level` (set in `BootScene`, changed in `MenuScene`) and `muted` (toggled in `GameScene`, undefined means unmuted). High scores persist in `localStorage` per level through `src/utils/scoreStorage.ts`.
+`GameScene` layout: opaque HUD strip on top (`config.hud`), play band in the middle, opaque typed-box panel at the bottom. Enemy labels are clamped to the play band. Every enemy whose top word starts with the typed buffer gets that prefix highlighted (`GameSession` exposes the matches; `target` is the closest one).
+
+Pause: Escape, the button, or window blur/hidden (`Phaser.Core.Events.BLUR` / `HIDDEN`) pause the run. Resuming runs a countdown (`config.pause.resumeCountdownSeconds`) on the scene clock, because tweens stay paused until it ends.
+
+Cross-scene state lives in the Phaser `registry`: `level` (set in `BootScene`, changed in `MenuScene`) and `muted` (toggled in `GameScene`, undefined means unmuted). High scores persist in `localStorage` per level through `src/utils/scoreStorage.ts`; zero-point runs are not saved.
 
 ## Key Directories
 
-| Path            | Purpose                                                                                                                |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `src/scenes/`   | Phaser scenes: rendering, input wiring, scene transitions                                                              |
-| `src/entities/` | Game objects: `Enemy` (sprite + label wrapper), `Player` (extends `Phaser.GameObjects.Sprite`), `hurlWord`             |
-| `src/utils/`    | Phaser-free logic (`gameSession`, `difficulty`, `words`, `scoreStorage`, `i18n`) plus scene helpers (`keyboard`, `ui`) |
-| `src/assets/`   | `audio/*.wav`, `font/`, `sprites/*.png` (horizontal frame strips; see `CREDITS.txt`)                                   |
-| `tests/`        | Vitest unit tests, flat, one file per `src/utils` module                                                               |
-| `dist/`         | Build output, git-ignored; never edit                                                                                  |
+| Path            | Purpose                                                                                                                 |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `src/scenes/`   | Phaser scenes: rendering, input wiring, scene transitions                                                               |
+| `src/entities/` | Game objects: `Enemy` (sprite + label wrapper), `Player` (extends `Phaser.GameObjects.Sprite`), `hurlWord`              |
+| `src/utils/`    | Phaser-free logic (`gameSession`, `difficulty`, `words`, `scoreStorage`, `i18n`) plus scene helpers (`keyboard`, `ui`)  |
+| `src/assets/`   | `audio/` (effects `.wav`, `music.ogg` + `.mp3`), `backgrounds/`, `font/`, `sprites/*.png` (frame strips); `CREDITS.txt` |
+| `scripts/`      | `generate_music.py`: regenerates the music loop (Python stdlib + `ffmpeg`)                                              |
+| `tests/`        | Vitest unit tests, flat, one file per `src/utils` module                                                                |
+| `dist/`         | Build output, git-ignored; never edit                                                                                   |
 
 ## Development Commands
 
@@ -88,7 +94,7 @@ Before finishing a change, run `npm run lint`, `npm test` and `npx tsc --noEmit`
 - **Scene fields** use `!` definite assignment and are (re)initialized in `create()`, because Phaser reuses scene instances across restarts.
 - **Text and buttons** go through `addText` / `addButton` in `src/utils/ui.ts`, and every user-visible string through `t(key, values)` in `src/utils/i18n.ts` (add the key to the `en` dictionary; `{name}` placeholders).
 - **Keyboard input** goes through `listenForKeys(scene, onKey)`, which uses a native `window` keydown listener, skips key repeats and unregisters on scene shutdown.
-- **Draw order** uses `config.depths` (negative depths for HUD and enemies; everything else sits at 0).
+- **Draw order** uses `config.depths` (negative depths for backdrop and enemies; HUD strip, panels and everything else sit at 0).
 - **Words**: `pickWord` avoids prefix collisions with words already on screen; preserve that invariant when touching spawning.
 - **Comments** explain why, not what: short `/** */` on exports, `//` for non-obvious decisions.
 
