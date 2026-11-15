@@ -27,6 +27,8 @@ export const config = {
     bigDemon: { frameWidth: 32, frameHeight: 36 },
   },
   animationFps: 8,
+  // Background loop volume (0 to 1): the sound effects play at full volume, so it sits below them.
+  music: { volume: 0.4 },
   player: { lives: 3, hitRadius: 12 },
   // typoSpeedBoost: speed multiplier for the targeted enemy each time its word is mistyped.
   enemy: { vanishMs: 250, labelGap: 2, typoSpeedBoost: 1.3 },
