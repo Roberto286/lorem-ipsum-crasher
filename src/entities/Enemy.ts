@@ -52,14 +52,14 @@ export class Enemy {
     this.typedLetters.setText(shown.slice(0, count) + blanked).setVisible(count > 0);
   }
 
-  /** The label is clamped inside the play area so the words are readable from the spawn edge. */
-  moveTo(x: number, y: number, playWidth: number, playHeight: number): void {
+  /** The label is clamped inside the play band so the words are readable from the spawn edge. */
+  moveTo(x: number, y: number, playWidth: number, playTop: number, playBottom: number): void {
     const halfWidth = this.label.width / 2;
     const labelBottom = y - this.sprite.height / 2 - config.enemy.labelGap;
     this.sprite.setPosition(x, y);
     this.label.setPosition(
       Phaser.Math.Clamp(x, halfWidth, playWidth - halfWidth),
-      Phaser.Math.Clamp(labelBottom, this.label.height, playHeight),
+      Phaser.Math.Clamp(labelBottom, playTop + this.label.height, playBottom),
     );
     this.typedLetters.setPosition(this.label.x, this.label.y);
   }

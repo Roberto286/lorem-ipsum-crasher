@@ -16,9 +16,9 @@ export const config = {
     panelError: 0x8a1c1c,
     typedBoxBorder: 0xffe14d,
   },
-  // Everything else sits at depth 0: enemy words stay readable over the HUD and over other
-  // demons, and enemies coming from below stay hidden behind the bottom panel.
-  depths: { backdrop: -4, hud: -3, enemy: -2, enemyLabel: -1 },
+  // Everything else sits at depth 0: the HUD strip and the bottom panel hide enemies that are
+  // still outside the play area, and enemy words stay readable over other demons.
+  depths: { backdrop: -3, enemy: -2, enemyLabel: -1 },
   // Sheets are horizontal strips of animation frames.
   sprites: {
     player: { frameWidth: 20, frameHeight: 28 },
@@ -42,6 +42,8 @@ export const config = {
   pointsPerLetter: 10,
   // maxLetters: cap on the typed buffer, typos included, so it never overflows the box.
   typedBox: { height: 24, errorFlashMs: 150, maxLetters: 40 },
+  // Opaque strip on top of the screen: score, lives and time on the left, buttons on the right.
+  hud: { height: 24, padding: 4 },
   // Picked in the menu. Harder: enemies spawn closer together and carry more words each.
   // wholePhrase: the words form one phrase that must be typed in a single go, spaces included.
   // erasableTypos: a wrong letter stays in the buffer until erased with Backspace; without it a

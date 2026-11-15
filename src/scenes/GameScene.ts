@@ -19,6 +19,8 @@ export class GameScene extends Phaser.Scene {
   private pausedText!: Phaser.GameObjects.Text;
   private typedBox!: Phaser.GameObjects.Rectangle;
   private typedText!: Phaser.GameObjects.Text;
+  // The play area is the band between the HUD strip and the bottom panel.
+  private playTop = 0;
   private playHeight = 0;
   private paused = false;
   // Set while the resume countdown runs; the game stays paused until it ends.
@@ -31,14 +33,15 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
-    this.playHeight = height - config.typedBox.height;
+    this.playTop = config.hud.height;
+    this.playHeight = height - config.typedBox.height - this.playTop;
     // Phaser reuses the scene instance on restart: reset what the previous run left behind.
     this.enemies.clear();
     this.paused = false;
     this.resumeTimer = undefined;
     this.session = new GameSession(width / 2, this.playHeight / 2, this.registry.get('level'));
     this.add.image(0, 0, 'backdrop').setOrigin(0).setDepth(config.depths.backdrop);
-    this.player = new Player(this, width / 2, this.playHeight / 2);
+    this.player = new Player(this, width / 2, this.playTop + this.playHeight / 2);
     this.createHud();
     this.createBottomPanel();
 
@@ -64,21 +67,27 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    const right = this.scale.width - 2;
+    const { width } = this.scale;
+    const { height, padding } = config.hud;
+    const centerY = height / 2;
     // Mute state lives in the registry: sound.mute reads the audio graph, which lags the setter
     // and never updates while the browser keeps the audio context locked.
     const soundLabel = () => t(this.registry.get('muted') ? 'soundOff' : 'soundOn');
 
-    this.hud = addText(this, 4, 4, '', { align: 'left' }).setOrigin(0).setDepth(config.depths.hud);
-    this.pauseButton = addButton(this, right, 0, t('pause'), () => this.togglePause());
-    this.pauseButton.setOrigin(1, 0).setDepth(config.depths.hud);
-    const soundButton = addButton(this, right, this.pauseButton.height, soundLabel(), () => {
+    // Opaque backdrop: enemies coming from above stay hidden until they enter the play area.
+    this.add.rectangle(width / 2, centerY, width, height, config.colors.panel);
+    this.hud = addText(this, padding, centerY, '', { align: 'left' }).setOrigin(0, 0.5);
+    const soundButton = addButton(this, width - padding, centerY, soundLabel(), () => {
       this.registry.toggle('muted');
       this.sound.mute = this.registry.get('muted');
       soundButton.setText(soundLabel());
+      this.pauseButton.setX(soundButton.x - soundButton.width);
     });
-    soundButton.setOrigin(1, 0).setDepth(config.depths.hud);
-    this.pausedText = addText(this, this.scale.width / 2, this.playHeight / 4, t('paused'), {
+    soundButton.setOrigin(1, 0.5);
+    this.pauseButton = addButton(this, soundButton.x - soundButton.width, centerY, t('pause'), () =>
+      this.togglePause(),
+    ).setOrigin(1, 0.5);
+    this.pausedText = addText(this, width / 2, this.playTop + this.playHeight / 4, t('paused'), {
       color: config.colors.accent,
       fontSize: `${config.font.titleSize}px`,
     }).setVisible(false);
@@ -86,13 +95,14 @@ export class GameScene extends Phaser.Scene {
 
   private createBottomPanel(): void {
     const { width, height } = this.scale;
-    const panelHeight = height - this.playHeight;
-    const boxCenterY = this.playHeight + config.typedBox.height / 2;
+    const playBottom = this.playTop + this.playHeight;
+    const panelHeight = height - playBottom;
+    const boxCenterY = playBottom + config.typedBox.height / 2;
 
     // Opaque backdrop: enemies coming from below stay hidden until they enter the play area.
     this.add.rectangle(
       width / 2,
-      this.playHeight + panelHeight / 2,
+      playBottom + panelHeight / 2,
       width,
       panelHeight,
       config.colors.panel,
@@ -159,7 +169,8 @@ export class GameScene extends Phaser.Scene {
         x + Math.cos(state.angle) * state.distance,
         y + Math.sin(state.angle) * state.distance,
         this.scale.width,
-        this.playHeight,
+        this.playTop,
+        this.playTop + this.playHeight,
       );
       enemy.highlight(matches.includes(state) ? typed.length : 0);
     }
@@ -171,9 +182,10 @@ export class GameScene extends Phaser.Scene {
     const typedColor = typed === '' || target ? config.colors.accent : config.colors.enraged;
     const status = [
       t('score', { value: score }),
-      `${t('lives', { value: lives })}  ${t('time', { value: Math.floor(elapsedMs / 1000) })}`,
+      t('lives', { value: lives }),
+      t('time', { value: Math.floor(elapsedMs / 1000) }),
     ];
-    this.hud.setText(status.join('\n'));
+    this.hud.setText(status.join('  '));
     this.typedText.setText(typed);
     if (this.typedText.style.color !== typedColor) this.typedText.setColor(typedColor);
   }
