@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { config } from '../config';
+import { config, type ClassKey } from '../config';
 import { Enemy } from '../entities/Enemy';
 import { Player } from '../entities/Player';
 import { hurlWord } from '../entities/wordProjectile';
@@ -45,7 +45,13 @@ export class GameScene extends Phaser.Scene {
       this.registry.get('level'),
     );
     this.add.image(0, 0, 'backdrop').setOrigin(0).setDepth(config.depths.backdrop);
-    this.player = new Player(this, width / 2, this.playTop + this.playHeight / 2);
+    const heroClass: ClassKey = this.registry.get('heroClass');
+    this.player = new Player(
+      this,
+      width / 2,
+      this.playTop + this.playHeight / 2,
+      config.classes[heroClass].tint,
+    );
     this.createHud();
     this.createBottomPanel();
 

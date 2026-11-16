@@ -48,6 +48,7 @@ export class BootScene extends Phaser.Scene {
       this.anims.create({ key, frames: key, frameRate: config.animationFps, repeat: -1 });
     }
     this.registry.set('level', config.defaultLevel);
+    this.registry.set('heroClass', config.defaultClass);
     // The sound manager is global, so the loop survives scene changes and follows sound.mute.
     // Boot runs once, so this starts a single loop; Phaser holds it until the browser unlocks audio.
     this.sound.play('music', { loop: true, volume: config.music.volume });

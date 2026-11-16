@@ -124,6 +124,13 @@ export const config = {
     },
   },
   defaultLevel: 'normal',
+  // Picked in the menu. Each class tints the hero sprite; white leaves the art unchanged.
+  classes: {
+    scribe: { tint: 0xffffff },
+    iceMage: { tint: 0x9fd8ff },
+    fireMage: { tint: 0xff9a3c },
+  },
+  defaultClass: 'scribe',
   // v2: combo scoring changed what a score is worth, so the v1 boards are no longer comparable.
   scores: { storageKey: 'loremIpsumCrasher.scores.v2', maxEntries: 5 },
   difficulty: {
@@ -160,4 +167,5 @@ export const config = {
 } as const;
 
 export type LevelKey = keyof typeof config.levels;
+export type ClassKey = keyof typeof config.classes;
 export type EnemyType = keyof typeof config.enemyTypes;

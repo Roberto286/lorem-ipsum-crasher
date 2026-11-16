@@ -34,13 +34,13 @@ GameScene.update → session.update(delta) → { spawned, reached }
 session.isOver → endRun → saveScore → scene.start('MenuScene', run)
 ```
 
-Scene order (`src/main.ts`): `BootScene` (asset loading, animations, desktop check, starts the music loop) → `IntroScene` (cutscene pages; each page has a camera `move`, a second camera keeps caption and hint fixed) → `MenuScene` (level picker, high scores, also the game-over screen via `create(lastRun)`) → `GameScene`.
+Scene order (`src/main.ts`): `BootScene` (asset loading, animations, desktop check, starts the music loop) → `IntroScene` (cutscene pages; each page has a camera `move`, a second camera keeps caption and hint fixed) → `MenuScene` (level and class picker, high scores, also the game-over screen via `create(lastRun)`) → `GameScene`.
 
 `GameScene` layout: opaque HUD strip on top (`config.hud`), play band in the middle, opaque typed-box panel at the bottom. Enemy labels are clamped to the play band. Every enemy whose top word starts with the typed buffer gets that prefix highlighted (`GameSession` exposes the matches; `target` is the closest one).
 
 Pause: Escape, the button, or window blur/hidden (`Phaser.Core.Events.BLUR` / `HIDDEN`) pause the run. Resuming runs a countdown (`config.pause.resumeCountdownSeconds`) on the scene clock, because tweens stay paused until it ends.
 
-Cross-scene state lives in the Phaser `registry`: `level` (set in `BootScene`, changed in `MenuScene`) and `muted` (toggled in `GameScene`, undefined means unmuted). High scores persist in `localStorage` per level through `src/utils/scoreStorage.ts`; zero-point runs are not saved.
+Cross-scene state lives in the Phaser `registry`: `level` and `heroClass` (both set in `BootScene`, changed in `MenuScene`) and `muted` (toggled in `GameScene`, undefined means unmuted). High scores persist in `localStorage` per level through `src/utils/scoreStorage.ts`; zero-point runs are not saved.
 
 ## Key Directories
 

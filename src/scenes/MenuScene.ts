@@ -1,15 +1,23 @@
 import * as Phaser from 'phaser';
-import { config, type LevelKey } from '../config';
+import { config, type ClassKey, type LevelKey } from '../config';
 import { t } from '../utils/i18n';
 import { listenForKeys } from '../utils/keyboard';
 import { loadScores, type ScoreEntry } from '../utils/scoreStorage';
 import { addButton, addText } from '../utils/ui';
 
 const levelKeys = Object.keys(config.levels) as LevelKey[];
+const classKeys = Object.keys(config.classes) as ClassKey[];
+
+/** The key `step` places after `current`, wrapping around the list. */
+function cycle<K>(keys: K[], current: K, step: number): K {
+  const index = keys.indexOf(current) + step + keys.length;
+  return keys[index % keys.length];
+}
 
 /** Title screen, also shown as the game over screen when it receives the last run. */
 export class MenuScene extends Phaser.Scene {
   private levelButton!: Phaser.GameObjects.Text;
+  private classButton!: Phaser.GameObjects.Text;
   private scoresText!: Phaser.GameObjects.Text;
 
   constructor() {
@@ -21,14 +29,16 @@ export class MenuScene extends Phaser.Scene {
     const centerX = width / 2;
     const start = () => this.scene.start('GameScene');
 
-    addText(this, centerX, height * 0.12, t('title'), {
+    addText(this, centerX, height * 0.1, t('title'), {
       color: config.colors.accent,
       fontSize: `${config.font.titleSize}px`,
     });
-    addText(this, centerX, height * 0.33, this.introText(lastRun));
-    this.levelButton = addButton(this, centerX, height * 0.52, '', () => this.shiftLevel(1));
-    this.scoresText = addText(this, centerX, height * 0.6, '').setOrigin(0.5, 0);
+    addText(this, centerX, height * 0.27, this.introText(lastRun));
+    this.levelButton = addButton(this, centerX, height * 0.42, '', () => this.shiftLevel(1));
+    this.classButton = addButton(this, centerX, height * 0.5, '', () => this.shiftClass(1));
+    this.scoresText = addText(this, centerX, height * 0.57, '').setOrigin(0.5, 0);
     this.showLevel();
+    this.showClass();
     const prompt = addButton(this, centerX, height * 0.94, t('start'), start);
     prompt.setColor(config.colors.accent);
     this.tweens.add({ targets: prompt, alpha: 0.2, duration: 500, yoyo: true, repeat: -1 });
@@ -37,6 +47,8 @@ export class MenuScene extends Phaser.Scene {
       if (key === 'Enter') start();
       else if (key === 'ArrowLeft') this.shiftLevel(-1);
       else if (key === 'ArrowRight') this.shiftLevel(1);
+      else if (key === 'ArrowUp') this.shiftClass(-1);
+      else if (key === 'ArrowDown') this.shiftClass(1);
     });
   }
 
@@ -51,9 +63,13 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private shiftLevel(step: number): void {
-    const index = levelKeys.indexOf(this.registry.get('level')) + step + levelKeys.length;
-    this.registry.set('level', levelKeys[index % levelKeys.length]);
+    this.registry.set('level', cycle(levelKeys, this.registry.get('level'), step));
     this.showLevel();
+  }
+
+  private shiftClass(step: number): void {
+    this.registry.set('heroClass', cycle(classKeys, this.registry.get('heroClass'), step));
+    this.showClass();
   }
 
   private showLevel(): void {
@@ -63,5 +79,10 @@ export class MenuScene extends Phaser.Scene {
     );
     this.levelButton.setText(t('difficulty', { level: t(level) }));
     this.scoresText.setText([t('highScores'), ...rows].join('\n'));
+  }
+
+  private showClass(): void {
+    const heroClass: ClassKey = this.registry.get('heroClass');
+    this.classButton.setText(t('heroClass', { name: t(heroClass) }));
   }
 }
