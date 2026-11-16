@@ -25,6 +25,12 @@ const rollThen = (roll: number, rest: () => number) => {
   let calls = 0;
   return () => (calls++ === 0 ? roll : rest());
 };
+const graceMs = config.classes.junior.passive.graceSeconds * 1000;
+/** A junior demon that reaches the hero waits out its grace first, so it lands on the second frame. */
+const landAfterGrace = (session: GameSession, ms = 0) => {
+  session.update(ms);
+  return session.update(graceMs);
+};
 const sharesPrefix = (a: string, b: string) => a.startsWith(b) || b.startsWith(a);
 const onScreen = ['dolore', 'incididunt', 'exercitation', 'ut', 'sit'];
 const levels = Object.keys(config.levels) as LevelKey[];
@@ -225,7 +231,7 @@ describe('tanks', () => {
     const session = newSession();
     session.enemies.push(enemy('sit', { type: 'tank', distance: 0 }));
 
-    session.update(16);
+    landAfterGrace(session);
 
     expect(tank.damage).toBeGreaterThan(config.enemyTypes.grunt.damage);
     expect(session.lives).toBe(config.player.lives - tank.damage);
@@ -236,7 +242,7 @@ describe('tanks', () => {
     session.lives = 1;
     session.enemies.push(enemy('sit', { type: 'tank', distance: 0 }));
 
-    session.update(16);
+    landAfterGrace(session);
 
     expect(session.lives).toBe(0);
     expect(session.isOver).toBe(true);
@@ -253,7 +259,7 @@ describe('tanks', () => {
     expect(session.streak).toBe(1);
 
     boss.distance = 0;
-    session.update(16);
+    landAfterGrace(session);
     expect(session.multiplier).toBe(1);
     expect(session.streak).toBe(0);
   });
@@ -415,11 +421,43 @@ describe('enemies', () => {
     const session = newSession();
     session.enemies.push(enemy('sit', { distance: config.player.hitRadius + 1, speed: 10 }));
 
-    const { reached } = session.update(1000);
+    const { reached } = landAfterGrace(session, 1000);
 
     expect(reached.map((e) => e.id)).toEqual([100]);
     expect(session.lives).toBe(config.player.lives - config.enemyTypes.grunt.damage);
     expect(session.enemies.map((e) => e.id)).not.toContain(100);
+  });
+
+  it('let a junior demon wait out its grace at the hero without costing a life', () => {
+    const session = newSession();
+    session.enemies.push(enemy('sit', { distance: 0 }));
+
+    const { reached } = session.update(16);
+
+    expect(reached).toHaveLength(0);
+    expect(session.lives).toBe(config.player.lives);
+    expect(session.enemies.find((e) => e.id === 100)?.graceMs).toBe(graceMs);
+  });
+
+  it('cost a life once a junior demon has waited out its grace', () => {
+    const session = newSession();
+    session.enemies.push(enemy('sit', { distance: 0 }));
+    session.update(16);
+
+    const { reached } = session.update(graceMs);
+
+    expect(reached.map((e) => e.id)).toEqual([100]);
+    expect(session.lives).toBe(config.player.lives - config.enemyTypes.grunt.damage);
+  });
+
+  it('score a junior demon killed inside its grace like any other kill', () => {
+    const session = newSession();
+    session.enemies.push(enemy('sit', { distance: 0 }));
+    session.update(16);
+
+    expect(type(session, 'sit').at(-1)?.kind).toBe('kill');
+    expect(session.score).toBeGreaterThan(0);
+    expect(session.lives).toBe(config.player.lives);
   });
 
   it('take a half-typed buffer with them when no other word matches it', () => {
@@ -427,7 +465,7 @@ describe('enemies', () => {
     session.enemies.push(enemy('sit', { distance: 0 }));
     type(session, 'si');
 
-    session.update(16);
+    landAfterGrace(session);
 
     expect(session.typed).toBe('');
   });
@@ -437,7 +475,7 @@ describe('enemies', () => {
     session.enemies.push(enemy('sit', { id: 100 }), enemy('amet', { id: 101, distance: 0 }));
     type(session, 'sx');
 
-    session.update(16);
+    landAfterGrace(session);
 
     expect(session.typed).toBe('sx');
   });
@@ -448,7 +486,7 @@ describe('enemies', () => {
       session.enemies.push(enemy('sit', { id: 100 + i, distance: 0 }));
     }
 
-    session.update(16);
+    landAfterGrace(session);
 
     expect(session.isOver).toBe(true);
     expect(session.lives).toBe(0);
@@ -624,7 +662,7 @@ describe('combo', () => {
     expect(session.streak).toBe(1);
     session.enemies.push(enemy('sit', { distance: config.player.hitRadius + 1, speed: 10 }));
 
-    session.update(1000);
+    landAfterGrace(session, 1000);
 
     expect(session.multiplier).toBe(1);
     expect(session.streak).toBe(0);
@@ -737,7 +775,7 @@ describe('spells', () => {
     session.lives = config.player.lives - 1;
     session.enemies = [enemy('ab', { spell: 'patch', distance: config.player.hitRadius })];
 
-    const { reached } = session.update(0);
+    const { reached } = landAfterGrace(session);
 
     expect(reached.map((e) => e.id)).toEqual([100]);
     expect(session.lives).toBe(config.player.lives - 1 - config.enemyTypes.grunt.damage);
@@ -861,7 +899,7 @@ describe('spells', () => {
     session.cast('firewall');
     session.enemies = [enemy('ab', { distance: config.player.hitRadius })];
 
-    const result = session.update(0);
+    const result = landAfterGrace(session);
 
     expect(result.reached).toHaveLength(1);
     expect(result.blocked).toBe(1);
@@ -878,7 +916,7 @@ describe('spells', () => {
       enemy('cd', { distance: config.player.hitRadius }),
     ];
 
-    const result = session.update(0);
+    const result = landAfterGrace(session);
 
     expect(result.blocked).toBe(1);
     expect(session.lives).toBe(config.player.lives - config.enemyTypes.grunt.damage);
@@ -889,7 +927,7 @@ describe('spells', () => {
     session.cast('firewall');
     session.enemies = [enemy('ab', { type: 'tank', distance: config.player.hitRadius })];
 
-    expect(session.update(0).blocked).toBe(1);
+    expect(landAfterGrace(session).blocked).toBe(1);
     expect(session.lives).toBe(config.player.lives);
   });
 

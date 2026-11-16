@@ -195,12 +195,15 @@ export const config = {
   // ready again that long after use) and an ultimate (command, spell, chargeWords: perfect words
   // that charge it, chargeSeconds: one word of charge per this many seconds, so perfect words
   // stay the main source; emptied on use). Commands are typed while ready and must not share
-  // a prefix with any lorem word.
+  // a prefix with any lorem word. A role may have a passive: graceSeconds (a demon reaching the
+  // hero stops there and costs no life that long, still typeable) and tint (sprite tint while graced).
   classes: {
     junior: {
       tint: 0xffffff,
       skill: { command: 'tab', spell: 'tab', cooldownSeconds: 8 },
       ultimate: { command: 'snippet', spell: 'snippet', chargeWords: 25, chargeSeconds: 7 },
+      // Grace: a demon that reaches the junior waits at the hero before it costs a life. A kill in time costs nothing.
+      passive: { graceSeconds: 1.5, tint: 0xffe066 },
     },
     devops: {
       tint: 0x9fd8ff,

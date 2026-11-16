@@ -23,6 +23,7 @@ export class Enemy {
   private readonly frame?: Phaser.GameObjects.Rectangle;
   private frozen = false;
   private throttled = false;
+  private graced = false;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -109,13 +110,9 @@ export class Enemy {
   setFrozen(frozen: boolean): void {
     if (frozen === this.frozen) return;
     this.frozen = frozen;
-    if (frozen) {
-      this.sprite.setTint(config.spells.freeze.tint);
-      this.sprite.anims.pause();
-    } else {
-      this.sprite.clearTint();
-      this.sprite.anims.resume();
-    }
+    this.refreshTint();
+    if (frozen) this.sprite.anims.pause();
+    else this.sprite.anims.resume();
   }
 
   /** Slows the walk of the sprite while a throttle lasts. */
@@ -123,6 +120,20 @@ export class Enemy {
     if (throttled === this.throttled) return;
     this.throttled = throttled;
     this.sprite.anims.timeScale = throttled ? config.spells.throttle.speedScale : 1;
+  }
+
+  /** Tints the sprite while the junior's passive holds the demon at the hero. */
+  setGraced(graced: boolean): void {
+    if (graced === this.graced) return;
+    this.graced = graced;
+    this.refreshTint();
+  }
+
+  /** Freeze tint wins over grace tint, which wins over none. */
+  private refreshTint(): void {
+    if (this.frozen) this.sprite.setTint(config.spells.freeze.tint);
+    else if (this.graced) this.sprite.setTint(config.classes.junior.passive.tint);
+    else this.sprite.clearTint();
   }
 
   vanish(): void {

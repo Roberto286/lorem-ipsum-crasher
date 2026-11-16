@@ -296,6 +296,7 @@ export class GameScene extends Phaser.Scene {
       enemy.moveTo(x, y, boxes[i]);
       enemy.highlight(matches.includes(state) ? typed.length : 0);
       enemy.setFrozen(this.session.frozen);
+      enemy.setGraced(state.graceMs !== undefined);
       enemy.setThrottled(this.session.throttled);
     });
   }

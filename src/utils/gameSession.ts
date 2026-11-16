@@ -18,6 +18,8 @@ export interface EnemyState {
   spell?: CarriedSpell;
   /** The short word the descope ultimate gave this demon: typed, it kills the demon. */
   descoped?: string;
+  /** Ms left before a demon at the hero costs a life (junior's passive); unset until it arrives. */
+  graceMs?: number;
 }
 
 /** What a spell did, for the scene to show. */
@@ -77,6 +79,8 @@ interface RoleAbilities {
   tint: number;
   skill?: { command: string; spell: SpellKey; cooldownSeconds: number };
   ultimate?: { command: string; spell: SpellKey; chargeWords: number; chargeSeconds: number };
+  /** Junior's passive: a demon reaching the hero waits graceSeconds before it costs a life. */
+  passive?: { graceSeconds: number; tint: number };
 }
 
 const abilitiesOf = (heroClass: ClassKey): RoleAbilities => config.classes[heroClass];
@@ -576,8 +580,25 @@ export class GameSession {
     const movingMs = Math.max(0, deltaMs - this.frozenMs);
     this.frozenMs = Math.max(0, this.frozenMs - deltaMs);
     this.throttleMs = Math.max(0, this.throttleMs - deltaMs);
-    for (const enemy of this.enemies) enemy.distance -= (enemy.speed * movingMs * pace) / 1000;
-    const reached = this.enemies.filter((enemy) => enemy.distance <= config.player.hitRadius);
+    // A graced demon waits on real time: freeze does not stretch its grace.
+    for (const enemy of this.enemies) {
+      if (enemy.graceMs !== undefined) enemy.graceMs -= deltaMs;
+      else enemy.distance -= (enemy.speed * movingMs * pace) / 1000;
+    }
+    const passive = abilitiesOf(this.heroClass).passive;
+    if (passive) {
+      for (const enemy of this.enemies) {
+        if (enemy.graceMs === undefined && enemy.distance <= config.player.hitRadius) {
+          enemy.distance = config.player.hitRadius;
+          enemy.graceMs = passive.graceSeconds * 1000;
+        }
+      }
+    }
+    const reached = this.enemies.filter((enemy) =>
+      passive
+        ? enemy.graceMs !== undefined && enemy.graceMs <= 0
+        : enemy.distance <= config.player.hitRadius,
+    );
     if (reached.length === 0) return { reached, blocked: 0 };
 
     this.enemies = this.enemies.filter((enemy) => !reached.includes(enemy));
