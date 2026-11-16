@@ -1,10 +1,11 @@
-import { config, type LevelKey } from '../config';
+import { config, type EnemyType, type LevelKey } from '../config';
 import { difficultyAt } from './difficulty';
 import { pickWord } from './words';
 
 /** Position is polar, relative to the player: the scene turns it into screen coordinates. */
 export interface EnemyState {
   id: number;
+  type: EnemyType;
   /**
    * Remaining texts, typed in order: the enemy dies with the last one.
    * One word each, or a single space-separated phrase on whole-phrase levels.
@@ -148,7 +149,8 @@ export class GameSession {
     if (reached.length === 0) return reached;
 
     this.enemies = this.enemies.filter((enemy) => !reached.includes(enemy));
-    this.lives = Math.max(0, this.lives - reached.length);
+    const damage = reached.reduce((sum, enemy) => sum + config.enemyTypes[enemy.type].damage, 0);
+    this.lives = Math.max(0, this.lives - damage);
     // Losing a life starts the combo over.
     this.multiplier = 1;
     this.streak = 0;
@@ -167,6 +169,7 @@ export class GameSession {
     this.untilSpawnMs += difficulty.spawnIntervalMs;
     const angle = this.rng() * Math.PI * 2;
     const taken = this.enemies.flatMap((active) => active.words);
+    const { speedScale, maxSpeed } = config.enemyTypes.grunt;
     const wordCount = 1 + Math.floor(this.rng() * difficulty.maxWords);
     // Each pick joins the list the next one must avoid, the enemy's own words included.
     const words = Array.from({ length: wordCount }, () => {
@@ -176,6 +179,7 @@ export class GameSession {
     });
     const enemy: EnemyState = {
       id: this.nextId++,
+      type: 'grunt',
       words: config.levels[this.level].wholePhrase ? [words.join(' ')] : words,
       angle,
       // Distance from the center to the arena edge along this angle.
@@ -183,7 +187,7 @@ export class GameSession {
         this.halfWidth / Math.abs(Math.cos(angle)),
         this.halfHeight / Math.abs(Math.sin(angle)),
       ),
-      speed: difficulty.enemySpeed,
+      speed: Math.min(maxSpeed, difficulty.enemySpeed * speedScale),
     };
     this.enemies.push(enemy);
     return [enemy];

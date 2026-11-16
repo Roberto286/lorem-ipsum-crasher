@@ -2,6 +2,7 @@ import { config, type Curve, type LevelKey } from '../config';
 
 export interface Difficulty {
   spawnIntervalMs: number;
+  /** Base pixels per second: each enemy type scales and caps it. */
   enemySpeed: number;
   maxWordLength: number;
   /** Most words a single enemy can carry. */
@@ -26,7 +27,7 @@ export function difficultyAt(seconds: number, level: LevelKey): Difficulty {
       difficulty.minSpawnIntervalMs,
       sampleCurve(difficulty.spawnIntervalMs, seconds) * spawnIntervalScale,
     ),
-    enemySpeed: Math.min(difficulty.maxEnemySpeed, sampleCurve(difficulty.enemySpeed, seconds)),
+    enemySpeed: sampleCurve(difficulty.enemySpeed, seconds),
     maxWordLength: Math.round(sampleCurve(difficulty.maxWordLength, seconds)),
     maxWords: maxWordsPerEnemy,
   };

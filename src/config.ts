@@ -34,6 +34,12 @@ export const config = {
   // spawnBehindPanels: pixels past the play band where top and bottom demons start, hidden by
   // the hud strip and the typed box, so they take as long to arrive as before the strip existed.
   enemy: { vanishMs: 250, labelGap: 2, typoSpeedBoost: 1.3, spawnBehindPanels: 12 },
+  // One entry per demon type. sprite: sheet and animation key. speedScale: multiplier on the
+  // difficulty.enemySpeed curve; maxSpeed: cap on the result, in pixels per second.
+  // damage: lives lost when the demon reaches the hero.
+  enemyTypes: {
+    grunt: { sprite: 'chort', speedScale: 1, maxSpeed: 80, damage: 1 },
+  },
   // The typed word flies from the hero to the demon before it takes effect.
   projectile: { flightMs: 220, spins: 1 },
   // Cutscene pictures live in the top pictureRatio of the screen (caption and hint sit below)
@@ -72,7 +78,7 @@ export const config = {
       [90, 1800],
       [180, 800],
     ],
-    // Pixels per second.
+    // Pixels per second, before the speedScale and maxSpeed of the enemy type.
     enemySpeed: [
       [0, 14],
       [90, 22],
@@ -84,8 +90,8 @@ export const config = {
       [180, 13],
     ],
     minSpawnIntervalMs: 400,
-    maxEnemySpeed: 80,
   },
 } as const;
 
 export type LevelKey = keyof typeof config.levels;
+export type EnemyType = keyof typeof config.enemyTypes;

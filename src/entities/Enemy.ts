@@ -3,9 +3,6 @@ import { config } from '../config';
 import type { EnemyState } from '../utils/gameSession';
 import { addText } from '../utils/ui';
 
-/** Animation per number of words left: a demon shrinks as its words are shot off. */
-const demonKeys = ['imp', 'chort', 'bigDemon'];
-
 export class Enemy {
   /** Public so a hurled word can home in on it. */
   readonly sprite: Phaser.GameObjects.Sprite;
@@ -17,7 +14,8 @@ export class Enemy {
     private readonly scene: Phaser.Scene,
     private readonly state: EnemyState,
   ) {
-    this.sprite = scene.add.sprite(0, 0, demonKeys[0]).setDepth(config.depths.enemy);
+    const { sprite } = config.enemyTypes[state.type];
+    this.sprite = scene.add.sprite(0, 0, sprite).play(sprite).setDepth(config.depths.enemy);
     // The art faces right: flip the demons that walk in from the right.
     this.sprite.setFlipX(Math.cos(state.angle) > 0);
     const padding = { x: 2, y: 2 };
@@ -35,9 +33,6 @@ export class Enemy {
 
   /** Remaining texts, one per line: the top one is typed next. */
   setWords(words: string[]): void {
-    // Counted across phrases too, so a three-word phrase is still a big demon.
-    const wordCount = words.join(' ').split(' ').length;
-    this.sprite.play(demonKeys[Math.min(wordCount, demonKeys.length) - 1]);
     this.label.setText(words.join('\n'));
   }
 

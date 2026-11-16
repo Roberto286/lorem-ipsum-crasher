@@ -10,6 +10,7 @@ const newSession = (rng = () => 0, level: LevelKey = 'normal') =>
 // Ids start high so they never collide with enemies the session spawns itself.
 const enemy = (word: string, overrides: Partial<EnemyState> = {}): EnemyState => ({
   id: 100,
+  type: 'grunt',
   words: [word],
   angle: 0,
   distance: 100,
@@ -43,6 +44,16 @@ describe('spawning', () => {
 
     session.update(interval);
     expect(session.enemies).toHaveLength(2);
+  });
+
+  it('spawns grunts at the curve speed scaled and capped by their type', () => {
+    const { speedScale, maxSpeed } = config.enemyTypes.grunt;
+    const [early] = newSession().update(16).spawned;
+    const [late] = newSession().update(100_000_000).spawned;
+
+    expect(early.type).toBe('grunt');
+    expect(early.speed).toBeCloseTo(difficultyAt(0, 'normal').enemySpeed * speedScale, 1);
+    expect(late.speed).toBe(maxSpeed);
   });
 
   it('gives enemies up to the word limit of the level', () => {
@@ -199,7 +210,7 @@ describe('enemies', () => {
     const { reached } = session.update(1000);
 
     expect(reached.map((e) => e.id)).toEqual([100]);
-    expect(session.lives).toBe(config.player.lives - 1);
+    expect(session.lives).toBe(config.player.lives - config.enemyTypes.grunt.damage);
     expect(session.enemies.map((e) => e.id)).not.toContain(100);
   });
 

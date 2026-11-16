@@ -47,7 +47,6 @@ describe('difficultyAt', () => {
     const late = difficultyAt(100_000, 'easy');
 
     expect(late.spawnIntervalMs).toBe(config.difficulty.minSpawnIntervalMs);
-    expect(late.enemySpeed).toBe(config.difficulty.maxEnemySpeed);
   });
 
   it('returns whole word lengths', () => {
