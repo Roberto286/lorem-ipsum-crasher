@@ -47,6 +47,8 @@ export const config = {
     spawnBehindPanels: 12,
     sideEntryShare: 0.8,
     maxVisibleWords: 3,
+    // spawnSoundGapMs: a spawn sound does not play again within this many ms of the same sound.
+    spawnSoundGapMs: 1500,
   },
   // One entry per demon type. sprite: sheet and animation key. speedScale: multiplier on the
   // difficulty.enemySpeed curve; maxSpeed: cap on the result, in pixels per second.

@@ -28,6 +28,8 @@ export class GameScene extends Phaser.Scene {
   private paused = false;
   // Set while the resume countdown runs; the game stays paused until it ends.
   private resumeTimer?: Phaser.Time.TimerEvent;
+  // Scene clock time each spawn sound last played; see config.enemy.spawnSoundGapMs.
+  private readonly lastSpawnSoundAt = new Map<string, number>();
 
   constructor() {
     super('GameScene');
@@ -42,6 +44,7 @@ export class GameScene extends Phaser.Scene {
     this.enemies.clear();
     this.paused = false;
     this.resumeTimer = undefined;
+    this.lastSpawnSoundAt.clear();
     const heroClass: ClassKey = this.registry.get('heroClass');
     this.session = new GameSession(
       width / 2,
@@ -74,7 +77,14 @@ export class GameScene extends Phaser.Scene {
     for (const state of spawned) {
       this.enemies.set(state.id, new Enemy(this, state));
       const enemyType = config.enemyTypes[state.type];
-      if ('spawnSound' in enemyType) this.sound.play(enemyType.spawnSound);
+      if ('spawnSound' in enemyType) {
+        const key = enemyType.spawnSound;
+        const last = this.lastSpawnSoundAt.get(key);
+        if (this.time.now - (last ?? -Infinity) >= config.enemy.spawnSoundGapMs) {
+          this.sound.play(key);
+          this.lastSpawnSoundAt.set(key, this.time.now);
+        }
+      }
     }
     for (const state of reached) this.removeEnemy(state.id)?.destroy();
     if (reached.length > blocked) this.showPlayerHit();
