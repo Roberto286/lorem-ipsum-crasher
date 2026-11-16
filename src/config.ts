@@ -34,6 +34,8 @@ export const config = {
   // typoSpeedBoost: speed multiplier for the targeted enemy each time its word is mistyped.
   // spawnBehindPanels: pixels past the play band where top and bottom demons start, hidden by
   // the hud strip and the typed box, so they take as long to arrive as before the strip existed.
+  // A taller typed box cuts the play band's half-height by 4 px, so this adds 4 px: GameScene
+  // passes playHeight / 2 + spawnBehindPanels, which stays 123 px at both heights.
   // sideEntryShare: demons that enter from the left or right start within this middle share of
   // the edge, so they are never hidden behind the hud strip or the typed box.
   // maxVisibleWords: lines of words a label shows before a count of the hidden ones, so the
@@ -44,7 +46,7 @@ export const config = {
     // Room kept between laid-out enemy labels and around the hero: 0 lets them touch.
     labelSpacing: 1,
     typoSpeedBoost: 1.3,
-    spawnBehindPanels: 12,
+    spawnBehindPanels: 16,
     sideEntryShare: 0.8,
     maxVisibleWords: 3,
     // spawnSoundGapMs: a spawn sound does not play again within this many ms of the same sound.
@@ -101,7 +103,7 @@ export const config = {
   // to x1 at once. perfectWordsPerLevel: perfect words in a row per level; maxMultiplier: the cap.
   combo: { perfectWordsPerLevel: 5, maxMultiplier: 5 },
   // maxLetters: cap on the typed buffer, typos included, so it never overflows the box.
-  typedBox: { height: 24, errorFlashMs: 150, maxLetters: 31 },
+  typedBox: { height: 32, errorFlashMs: 150, maxLetters: 31 },
   // Opaque strip on top of the screen: score, lives and time on the left, buttons on the right.
   hud: { height: 24, padding: 4 },
   // Carried spells (weight and color) drop from some demons and act on the hero, but only on a
