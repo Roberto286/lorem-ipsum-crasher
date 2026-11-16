@@ -1,0 +1,4 @@
+Enemy death sounds (audio/deathgrunt.wav, audio/deathkamikaze.wav, audio/deathtank.wav)
+Source: synthesised by scripts/generate_sfx.py from oscillators, seeded noise and filters.
+License: generated in-project; no recordings or third-party material.
+Changes: none; the script output is the file.

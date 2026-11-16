@@ -44,15 +44,15 @@ Cross-scene state lives in the Phaser `registry`: `level` and `heroClass` (both 
 
 ## Key Directories
 
-| Path            | Purpose                                                                                                                 |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `src/scenes/`   | Phaser scenes: rendering, input wiring, scene transitions                                                               |
-| `src/entities/` | Game objects: `Enemy` (sprite + label wrapper), `Player` (extends `Phaser.GameObjects.Sprite`), `hurlWord`              |
-| `src/utils/`    | Phaser-free logic (`gameSession`, `difficulty`, `words`, `scoreStorage`, `i18n`) plus scene helpers (`keyboard`, `ui`)  |
-| `src/assets/`   | `audio/` (effects `.wav`, `music.ogg` + `.mp3`), `backgrounds/`, `font/`, `sprites/*.png` (frame strips); `CREDITS.txt` |
-| `scripts/`      | `generate_music.py`: regenerates the music loop (Python stdlib + `ffmpeg`)                                              |
-| `tests/`        | Vitest unit tests, flat, one file per `src/utils` module                                                                |
-| `dist/`         | Build output, git-ignored; never edit                                                                                   |
+| Path            | Purpose                                                                                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/scenes/`   | Phaser scenes: rendering, input wiring, scene transitions                                                                                               |
+| `src/entities/` | Game objects: `Enemy` (sprite + label wrapper), `Player` (extends `Phaser.GameObjects.Sprite`), `hurlWord`                                              |
+| `src/utils/`    | Phaser-free logic (`gameSession`, `difficulty`, `words`, `scoreStorage`, `i18n`) plus scene helpers (`keyboard`, `ui`)                                  |
+| `src/assets/`   | `audio/` (effects `.wav`, `music.ogg` + `.mp3`), `backgrounds/`, `font/`, `sprites/*.png` (frame strips); `CREDITS.txt`                                 |
+| `scripts/`      | `generate_music.py`: regenerates the music loop (Python stdlib + `ffmpeg`); `generate_sfx.py`: regenerates the enemy sounds in `audio/` (Python stdlib) |
+| `tests/`        | Vitest unit tests, flat, one file per `src/utils` module                                                                                                |
+| `dist/`         | Build output, git-ignored; never edit                                                                                                                   |
 
 ## Development Commands
 

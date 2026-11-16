@@ -1,4 +1,7 @@
 import * as Phaser from 'phaser';
+import deathGruntUrl from '../assets/audio/deathgrunt.wav';
+import deathKamikazeUrl from '../assets/audio/deathkamikaze.wav';
+import deathTankUrl from '../assets/audio/deathtank.wav';
 import errorUrl from '../assets/audio/error.wav';
 import gameOverUrl from '../assets/audio/gameover.wav';
 import hurtUrl from '../assets/audio/hurt.wav';
@@ -27,6 +30,9 @@ export class BootScene extends Phaser.Scene {
     this.load.spritesheet('bigDemon', bigDemonUrl, config.sprites.bigDemon);
     this.load.image('backdrop', backdropUrl);
     this.load.audio('kill', killUrl);
+    this.load.audio('deathGrunt', deathGruntUrl);
+    this.load.audio('deathKamikaze', deathKamikazeUrl);
+    this.load.audio('deathTank', deathTankUrl);
     this.load.audio('error', errorUrl);
     this.load.audio('hurt', hurtUrl);
     this.load.audio('gameOver', gameOverUrl);

@@ -136,7 +136,7 @@ export class GameScene extends Phaser.Scene {
       hurlWord(this, word, this.player, enemy.sprite, () => {
         // Gone already if it reached the player while the word was flying.
         if (!enemy.sprite.active) return;
-        this.sound.play('kill');
+        this.sound.play(kind === 'kill' ? config.enemyTypes[state.type].deathSound : 'kill');
         if (kind === 'kill') enemy.vanish();
         else enemy.setWords(state.words);
       });

@@ -49,12 +49,20 @@ export const config = {
   // One entry per demon type. sprite: sheet and animation key. speedScale: multiplier on the
   // difficulty.enemySpeed curve; maxSpeed: cap on the result, in pixels per second.
   // damage: lives lost when the demon reaches the hero.
+  // deathSound: sound key played when the demon dies; one effect per type.
   enemyTypes: {
-    grunt: { sprite: 'chort', speedScale: 1, maxSpeed: 80, damage: 1 },
+    grunt: { sprite: 'chort', speedScale: 1, maxSpeed: 80, damage: 1, deathSound: 'deathGrunt' },
     // Carries one word of up to maxWordLength letters on every level and enters from the sides
     // only: the top and bottom edges are so close that it would arrive in under a second.
     // maxSpeed leaves about 2.5 s to type that word from the nearest point of a side edge.
-    kamikaze: { sprite: 'imp', speedScale: 2.5, maxSpeed: 90, damage: 1, maxWordLength: 4 },
+    kamikaze: {
+      sprite: 'imp',
+      speedScale: 2.5,
+      maxSpeed: 90,
+      damage: 1,
+      maxWordLength: 4,
+      deathSound: 'deathKamikaze',
+    },
     // The miniboss: minWords to maxWords words on every level, typed phraseWords at a time on
     // whole-phrase levels. It enters from the sides, the long way, so there is time for them.
     // maxWordLength: cap on the difficulty.maxWordLength curve for its words, so that many of
@@ -68,6 +76,7 @@ export const config = {
       maxWords: 8,
       phraseWords: 2,
       maxWordLength: 6,
+      deathSound: 'deathTank',
     },
   },
   // The typed word flies from the hero to the demon before it takes effect.
