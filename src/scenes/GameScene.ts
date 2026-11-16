@@ -21,7 +21,12 @@ export class GameScene extends Phaser.Scene {
   private typedBox!: Phaser.GameObjects.Rectangle;
   private typedText!: Phaser.GameObjects.Text;
   private drops!: Phaser.GameObjects.Text;
-  private abilities!: Phaser.GameObjects.Text;
+  private skillText!: Phaser.GameObjects.Text;
+  private skillFill!: Phaser.GameObjects.Text;
+  private skillTyped!: Phaser.GameObjects.Text;
+  private ultimateText!: Phaser.GameObjects.Text;
+  private ultimateFill!: Phaser.GameObjects.Text;
+  private ultimateTyped!: Phaser.GameObjects.Text;
   // The play area is the band between the HUD strip and the bottom panel.
   private playTop = 0;
   private playHeight = 0;
@@ -149,11 +154,22 @@ export class GameScene extends Phaser.Scene {
     this.drops = addText(this, width - 12, boxCenterY, '', {
       color: config.colors.accent,
     }).setOrigin(1, 0.5);
-    // The free left part of the box: ready commands, or the ultimate's charge while it builds.
-    this.abilities = addText(this, 12, boxCenterY, '', { color: config.colors.dim }).setOrigin(
-      0,
-      0.5,
-    );
+    // The free left part of the box: one line per ability, skill above ultimate. A lone ability
+    // sits centred. Each line stacks three texts in this paint order: the white command, a yellow
+    // fill (charge progress, the whole word when ready), and the red typed prefix of a ready one.
+    const abilityLayer = (y: number, color: string) =>
+      addText(this, 12, y, '', { color }).setOrigin(0, 0.5);
+    const { skillCommand, ultimateCommand } = this.session;
+    const offset =
+      skillCommand !== undefined && ultimateCommand !== undefined ? config.abilityLineOffset : 0;
+    const skillY = boxCenterY - offset;
+    const ultimateY = boxCenterY + offset;
+    this.skillText = abilityLayer(skillY, config.colors.text);
+    this.skillFill = abilityLayer(skillY, config.colors.accent);
+    this.skillTyped = abilityLayer(skillY, config.colors.enraged);
+    this.ultimateText = abilityLayer(ultimateY, config.colors.text);
+    this.ultimateFill = abilityLayer(ultimateY, config.colors.accent);
+    this.ultimateTyped = abilityLayer(ultimateY, config.colors.enraged);
   }
 
   private handleLetter(letter: string): void {
@@ -285,12 +301,11 @@ export class GameScene extends Phaser.Scene {
       typed,
       target,
       typingCommand,
-      readyAbilities,
       skillCommand,
       skillReady,
-      skillCooldownSeconds,
       ultimateCommand,
       ultimateReady,
+      skillCooldownSeconds,
       ultimatePercent,
     } = this.session;
     // Red while the buffer holds a typo: nothing can be killed until it is erased.
@@ -309,25 +324,59 @@ export class GameScene extends Phaser.Scene {
       ...(cached ? [t('cache')] : []),
     ];
     this.drops.setText(drops.join(' '));
-    // Two lines: the skill, then the ultimate. Each shows its command when ready, else its wait.
-    const lines: string[] = [];
-    if (skillCommand !== undefined) {
-      lines.push(skillReady ? skillCommand : t('skillCooldown', { seconds: skillCooldownSeconds }));
-    }
-    if (ultimateCommand !== undefined && ultimatePercent !== undefined) {
-      lines.push(
-        ultimateReady ? ultimateCommand : t('ultimateCharge', { percent: ultimatePercent }),
-      );
-    }
-    this.abilities.setText(lines.join('\n'));
-    const abilitiesColor = readyAbilities.length > 0 ? config.colors.accent : config.colors.dim;
-    if (this.abilities.style.color !== abilitiesColor) this.abilities.setColor(abilitiesColor);
+    // Each line: white command, yellow charge fill (the whole word when ready), red typed prefix.
+    const heroClass: ClassKey = this.registry.get('heroClass');
+    const role: { tint: number; skill?: { cooldownSeconds: number } } = config.classes[heroClass];
+    const skillTotal = role.skill?.cooldownSeconds;
+    const skillFraction = skillTotal === undefined ? 0 : 1 - skillCooldownSeconds / skillTotal;
+    this.drawAbility(
+      { base: this.skillText, fill: this.skillFill, typed: this.skillTyped },
+      skillCommand,
+      skillReady,
+      skillFraction,
+      typed,
+    );
+    this.drawAbility(
+      { base: this.ultimateText, fill: this.ultimateFill, typed: this.ultimateTyped },
+      ultimateCommand,
+      ultimateReady,
+      (ultimatePercent ?? 0) / 100,
+      typed,
+    );
     const typedText =
       typed.length <= config.typedBox.visibleLetters
         ? typed
         : '…' + typed.slice(-(config.typedBox.visibleLetters - 1));
     this.typedText.setText(typedText);
     if (this.typedText.style.color !== typedColor) this.typedText.setColor(typedColor);
+  }
+
+  /** Sets one ability line: white command, yellow fill, red typed prefix of a ready command. */
+  private drawAbility(
+    line: {
+      base: Phaser.GameObjects.Text;
+      fill: Phaser.GameObjects.Text;
+      typed: Phaser.GameObjects.Text;
+    },
+    command: string | undefined,
+    ready: boolean,
+    fraction: number,
+    typed: string,
+  ): void {
+    if (command === undefined) {
+      line.base.setText('');
+      line.fill.setText('');
+      line.typed.setText('');
+      return;
+    }
+    line.base.setText(command);
+    // Blanks keep each overlay's monospace glyphs on the base text, as Enemy.highlight does.
+    const paint = (text: Phaser.GameObjects.Text, count: number) =>
+      text
+        .setText(command.slice(0, count) + ' '.repeat(command.length - count))
+        .setVisible(count > 0);
+    paint(line.fill, ready ? command.length : Math.floor(fraction * command.length));
+    paint(line.typed, ready && command.startsWith(typed) ? typed.length : 0);
   }
 
   private togglePause(): void {

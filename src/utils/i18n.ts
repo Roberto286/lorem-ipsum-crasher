@@ -41,8 +41,6 @@ const en = {
   soundOn: 'SOUND ON',
   soundOff: 'SOUND OFF',
   moreWords: '+{count}',
-  ultimateCharge: '{percent}%',
-  skillCooldown: '{seconds}s',
   skillCommand: 'SKILL: {command}',
   ultimateCommand: 'ULT: {command}',
 };

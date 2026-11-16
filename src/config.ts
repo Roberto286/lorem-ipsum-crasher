@@ -106,6 +106,8 @@ export const config = {
   // visibleLetters: most characters the centre slot shows. A longer correct phrase shows a leading
   // '…' and its last visibleLetters - 1 letters, so the newest letters stay in view.
   typedBox: { height: 32, errorFlashMs: 150, maxLetters: 31, visibleLetters: 31 },
+  // The typed box's ability lines: px each sits from the box centre, skill above, ultimate below.
+  abilityLineOffset: 5,
   // Opaque strip on top of the screen: score, lives and time on the left, buttons on the right.
   hud: { height: 24, padding: 4 },
   // Carried spells (weight and color) drop from some demons and act on the hero, but only on a
