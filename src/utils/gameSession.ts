@@ -21,7 +21,7 @@ export interface EnemyState {
 /** What a spell did, for the scene to show. */
 export type Cast =
   // healed: lives actually gained, 0 when they were full.
-  { spell: 'patch'; healed: number } | { spell: 'freeze' };
+  { spell: 'patch'; healed: number } | { spell: 'freeze' } | { spell: 'firewall' };
 
 export type TypeResult =
   | { kind: 'progress' }
@@ -37,6 +37,8 @@ export type TypeResult =
 export interface UpdateResult {
   spawned: EnemyState[];
   reached: EnemyState[];
+  // Demons the firewall absorbed: they are in reached too.
+  blocked: number;
 }
 
 /** The spells a demon can carry: the keys of config.spells that have a weight. */
@@ -66,6 +68,8 @@ export class GameSession {
   multiplier = 1;
   /** Perfect words toward the next multiplier level. */
   streak = 0;
+  /** Demons the firewall still absorbs, one per point. */
+  shield = 0;
   // A wrong letter was typed since the last completed word, so that word cannot be perfect.
   private wordFlawed = false;
   // Milliseconds left of a freeze: while it lasts no demon moves.
@@ -99,9 +103,9 @@ export class GameSession {
 
   update(deltaMs: number): UpdateResult {
     this.elapsedMs += deltaMs;
-    const reached = this.advanceEnemies(deltaMs);
+    const { reached, blocked } = this.advanceEnemies(deltaMs);
     const spawned = [...this.spawnIfDue(deltaMs), ...this.spawnTankIfDue(deltaMs)];
-    return { spawned, reached };
+    return { spawned, reached, blocked };
   }
 
   typeLetter(letter: string): TypeResult {
@@ -146,6 +150,10 @@ export class GameSession {
         // A second freeze restarts the timer instead of adding to it.
         this.frozenMs = config.spells.freeze.seconds * 1000;
         return { spell: 'freeze' };
+      case 'firewall':
+        // A second firewall does not stack: it sets the shield back to hits.
+        this.shield = config.spells.firewall.hits;
+        return { spell: 'firewall' };
     }
   }
 
@@ -202,24 +210,30 @@ export class GameSession {
       .sort((a, b) => a.distance - b.distance);
   }
 
-  private advanceEnemies(deltaMs: number): EnemyState[] {
+  private advanceEnemies(deltaMs: number): { reached: EnemyState[]; blocked: number } {
     const movingMs = Math.max(0, deltaMs - this.frozenMs);
     this.frozenMs = Math.max(0, this.frozenMs - deltaMs);
     for (const enemy of this.enemies) enemy.distance -= (enemy.speed * movingMs) / 1000;
     const reached = this.enemies.filter((enemy) => enemy.distance <= config.player.hitRadius);
-    if (reached.length === 0) return reached;
+    if (reached.length === 0) return { reached, blocked: 0 };
 
     this.enemies = this.enemies.filter((enemy) => !reached.includes(enemy));
-    const damage = reached.reduce((sum, enemy) => sum + config.enemyTypes[enemy.type].damage, 0);
-    this.lives = Math.max(0, this.lives - damage);
-    // Losing a life starts the combo over.
-    this.multiplier = 1;
-    this.streak = 0;
+    // The shield takes whole demons, one per point, in the order they reached the hero.
+    const blocked = Math.min(this.shield, reached.length);
+    this.shield -= blocked;
+    const hitting = reached.slice(blocked);
+    if (hitting.length > 0) {
+      const damage = hitting.reduce((sum, enemy) => sum + config.enemyTypes[enemy.type].damage, 0);
+      this.lives = Math.max(0, this.lives - damage);
+      // Losing a life starts the combo over.
+      this.multiplier = 1;
+      this.streak = 0;
+    }
     // The half-typed word may have just hit the player: do not leave its letters behind. A
     // buffer holding a typo matched nobody to begin with, so it stays for the player to fix.
     const wasTyped = reached.some((enemy) => enemy.words[0].startsWith(this.typed));
     if (wasTyped && this.matching(this.typed).length === 0) this.typed = '';
-    return reached;
+    return { reached, blocked };
   }
 
   private spawnIfDue(deltaMs: number): EnemyState[] {

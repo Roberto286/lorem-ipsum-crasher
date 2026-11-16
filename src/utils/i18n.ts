@@ -28,6 +28,7 @@ const en = {
   score: 'SCORE {value}',
   combo: 'x{value}',
   lives: 'LIVES {value}',
+  shield: 'FW',
   time: 'TIME {value}s',
   highScores: 'HIGH SCORES',
   highScoreRow: '{rank}. {score}  {seconds}s',

@@ -66,14 +66,19 @@ export class GameScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     if (this.paused) return;
 
-    const { spawned, reached } = this.session.update(delta);
+    const { spawned, reached, blocked } = this.session.update(delta);
     for (const state of spawned) {
       this.enemies.set(state.id, new Enemy(this, state));
       const enemyType = config.enemyTypes[state.type];
       if ('spawnSound' in enemyType) this.sound.play(enemyType.spawnSound);
     }
     for (const state of reached) this.removeEnemy(state.id)?.destroy();
-    if (reached.length > 0) this.showPlayerHit();
+    if (reached.length > blocked) this.showPlayerHit();
+    else if (blocked > 0) {
+      // The firewall took the demons: a flash, no hit.
+      const color = Phaser.Display.Color.IntegerToRGB(config.spells.firewall.color);
+      this.cameras.main.flash(config.spells.firewall.flashMs, color.r, color.g, color.b);
+    }
 
     this.drawEnemies();
     this.drawHud();
@@ -212,12 +217,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drawHud(): void {
-    const { score, multiplier, lives, elapsedMs, typed, target } = this.session;
+    const { score, multiplier, lives, shield, elapsedMs, typed, target } = this.session;
     // Red while the buffer holds a typo: nothing can be killed until it is erased.
     const typedColor = typed === '' || target ? config.colors.accent : config.colors.enraged;
     const status = [
       t('score', { value: score }),
       t('lives', { value: lives }),
+      ...(shield > 0 ? [t('shield')] : []),
       t('combo', { value: multiplier }),
       t('time', { value: Math.floor(elapsedMs / 1000) }),
     ];

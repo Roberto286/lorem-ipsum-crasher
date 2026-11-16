@@ -108,6 +108,9 @@ export const config = {
     // lives: lives given back, up to player.lives. The HUD text swells to pulseScale and back,
     // pulseMs each way.
     patch: { weight: 1, color: 0x1e8a3c, lives: 1, pulseMs: 150, pulseScale: 1.2 },
+    // hits: demons the firewall absorbs, one per point, whole demons. A second firewall while one
+    // is up does not stack: the shield is set back to hits. flashMs: screen flash when it absorbs.
+    firewall: { weight: 1, color: 0xa0401a, hits: 1, flashMs: 150 },
     // seconds: how long no demon moves. tint: sprite colour of a frozen demon.
     freeze: { seconds: 2, tint: 0x9fd8ff },
   },

@@ -820,4 +820,63 @@ describe('spells', () => {
       cast: undefined,
     });
   });
+
+  it('absorbs the next hit with a firewall and keeps the combo', () => {
+    const session = newSession();
+    session.multiplier = 3;
+    session.cast('firewall');
+    session.enemies = [enemy('ab', { distance: config.player.hitRadius })];
+
+    const result = session.update(0);
+
+    expect(result.reached).toHaveLength(1);
+    expect(result.blocked).toBe(1);
+    expect(session.lives).toBe(config.player.lives);
+    expect(session.multiplier).toBe(3);
+    expect(session.shield).toBe(0);
+  });
+
+  it('lets the second of two demons through when the firewall holds one', () => {
+    const session = newSession();
+    session.cast('firewall');
+    session.enemies = [
+      enemy('ab', { distance: config.player.hitRadius }),
+      enemy('cd', { distance: config.player.hitRadius }),
+    ];
+
+    const result = session.update(0);
+
+    expect(result.blocked).toBe(1);
+    expect(session.lives).toBe(config.player.lives - config.enemyTypes.grunt.damage);
+  });
+
+  it('absorbs a tank whole', () => {
+    const session = newSession();
+    session.cast('firewall');
+    session.enemies = [enemy('ab', { type: 'tank', distance: config.player.hitRadius })];
+
+    expect(session.update(0).blocked).toBe(1);
+    expect(session.lives).toBe(config.player.lives);
+  });
+
+  it('does not stack a second firewall', () => {
+    const session = newSession();
+    session.cast('firewall');
+    session.cast('firewall');
+
+    expect(session.shield).toBe(config.spells.firewall.hits);
+  });
+
+  it('drops a firewall from a carrier killed cleanly', () => {
+    const session = newSession();
+    session.enemies = [enemy('ab', { spell: 'firewall' })];
+
+    expect(type(session, 'ab').at(-1)).toEqual({
+      kind: 'kill',
+      enemy: expect.objectContaining({ id: 100 }),
+      word: 'ab',
+      cast: { spell: 'firewall' },
+    });
+    expect(session.shield).toBe(config.spells.firewall.hits);
+  });
 });
