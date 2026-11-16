@@ -159,12 +159,12 @@ export class GameScene extends Phaser.Scene {
 
   /** Shows a spell that the session has already applied. */
   private showCast(cast: Cast): void {
-    if (cast.spell === 'heal' && cast.healed > 0) this.pulseHud();
+    if (cast.spell === 'patch' && cast.healed > 0) this.pulseHud();
   }
 
   private pulseHud(): void {
-    const { pulseMs, pulseScale } = config.spells.heal;
-    // A second heal during the pulse starts it over instead of piling the scales up.
+    const { pulseMs, pulseScale } = config.spells.patch;
+    // A second patch during the pulse starts it over instead of piling the scales up.
     this.tweens.killTweensOf(this.hud);
     this.hud.setScale(1).setColor(config.colors.accent);
     this.tweens.add({

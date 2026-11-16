@@ -665,25 +665,25 @@ describe('spells', () => {
     }
   });
 
-  it('gives back a life on a heal, never past the full count', () => {
+  it('gives back a life on a patch, never past the full count', () => {
     const session = newSession();
     session.lives = config.player.lives - 1;
 
-    session.cast('heal');
+    session.cast('patch');
     expect(session.lives).toBe(config.player.lives);
-    expect(session.cast('heal')).toEqual({ spell: 'heal', healed: 0 });
+    expect(session.cast('patch')).toEqual({ spell: 'patch', healed: 0 });
   });
 
   it('casts the spell of a carrier killed by typing', () => {
     const session = newSession();
-    session.lives = config.player.lives - config.spells.heal.lives;
-    session.enemies = [enemy('ab', { spell: 'heal' })];
+    session.lives = config.player.lives - config.spells.patch.lives;
+    session.enemies = [enemy('ab', { spell: 'patch' })];
 
     expect(type(session, 'ab').at(-1)).toEqual({
       kind: 'kill',
       enemy: expect.objectContaining({ id: 100 }),
       word: 'ab',
-      cast: { spell: 'heal', healed: config.spells.heal.lives },
+      cast: { spell: 'patch', healed: config.spells.patch.lives },
     });
   });
 
@@ -701,7 +701,7 @@ describe('spells', () => {
   it('loses the spell of a carrier that reaches the hero', () => {
     const session = newSession();
     session.lives = config.player.lives - 1;
-    session.enemies = [enemy('ab', { spell: 'heal', distance: config.player.hitRadius })];
+    session.enemies = [enemy('ab', { spell: 'patch', distance: config.player.hitRadius })];
 
     const { reached } = session.update(0);
 
@@ -792,8 +792,8 @@ describe('spells', () => {
 
   it('drops nothing when the last word of a carrier had a wrong letter', () => {
     const session = newSession(() => 0, 'easy');
-    session.lives = config.player.lives - config.spells.heal.lives;
-    session.enemies = [enemy('ab', { spell: 'heal' })];
+    session.lives = config.player.lives - config.spells.patch.lives;
+    session.enemies = [enemy('ab', { spell: 'patch' })];
 
     type(session, 'x');
     session.eraseLetter();
@@ -804,12 +804,12 @@ describe('spells', () => {
       word: 'ab',
       cast: undefined,
     });
-    expect(session.lives).toBe(config.player.lives - config.spells.heal.lives);
+    expect(session.lives).toBe(config.player.lives - config.spells.patch.lives);
   });
 
   it('drops nothing on hell when the last word of a carrier had a wrong letter', () => {
     const session = newSession(() => 0, 'hell');
-    session.enemies = [enemy('ab', { spell: 'heal' })];
+    session.enemies = [enemy('ab', { spell: 'patch' })];
 
     type(session, 'ax');
 

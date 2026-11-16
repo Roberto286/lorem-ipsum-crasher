@@ -21,7 +21,7 @@ export interface EnemyState {
 /** What a spell did, for the scene to show. */
 export type Cast =
   // healed: lives actually gained, 0 when they were full.
-  { spell: 'heal'; healed: number } | { spell: 'freeze' };
+  { spell: 'patch'; healed: number } | { spell: 'freeze' };
 
 export type TypeResult =
   | { kind: 'progress' }
@@ -140,8 +140,8 @@ export class GameSession {
    */
   cast(spell: SpellKey): Cast {
     switch (spell) {
-      case 'heal':
-        return this.heal(config.spells.heal.lives);
+      case 'patch':
+        return this.heal(config.spells.patch.lives);
       case 'freeze':
         // A second freeze restarts the timer instead of adding to it.
         this.frozenMs = config.spells.freeze.seconds * 1000;
@@ -152,7 +152,7 @@ export class GameSession {
   private heal(lives: number): Cast {
     const healed = Math.min(lives, config.player.lives - this.lives);
     this.lives += healed;
-    return { spell: 'heal', healed };
+    return { spell: 'patch', healed };
   }
 
   /** Removes the last typed letter; strict levels have nothing to erase. */
