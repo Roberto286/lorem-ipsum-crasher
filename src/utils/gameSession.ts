@@ -20,6 +20,8 @@ export interface EnemyState {
   descoped?: string;
   /** Ms left before a demon at the hero costs a life (junior's passive); unset until it arrives. */
   graceMs?: number;
+  /** Ms left of a slow (devops passive): the demon walks at the role's slowFactor while it lasts. */
+  slowMs?: number;
 }
 
 /** What a spell did, for the scene to show. */
@@ -79,8 +81,11 @@ interface RoleAbilities {
   tint: number;
   skill?: { command: string; spell: SpellKey; cooldownSeconds: number };
   ultimate?: { command: string; spell: SpellKey; chargeWords: number; chargeSeconds: number };
-  /** Junior's passive: a demon reaching the hero waits graceSeconds before it costs a life. */
-  passive?: { graceSeconds: number; tint: number };
+  /**
+   * graceSeconds: a demon reaching the hero waits that long before it costs a life. slowFactor and
+   * slowSeconds: a word typed on a demon slows it to that speed multiplier for that long.
+   */
+  passive?: { tint: number; graceSeconds?: number; slowFactor?: number; slowSeconds?: number };
 }
 
 const abilitiesOf = (heroClass: ClassKey): RoleAbilities => config.classes[heroClass];
@@ -283,7 +288,12 @@ export class GameSession {
     this.score += scored * config.pointsPerLetter * this.multiplier * scale;
     this.countWord();
     this.typed = '';
-    if (!dies && enemy.words.length > 0) return { kind: 'word', enemy, word };
+    if (!dies && enemy.words.length > 0) {
+      // A typed word slows the demon the role's passive says, refreshing any slow already on it.
+      const passive = abilitiesOf(this.heroClass).passive;
+      if (passive?.slowSeconds !== undefined) enemy.slowMs = passive.slowSeconds * 1000;
+      return { kind: 'word', enemy, word };
+    }
     this.enemies = this.enemies.filter((other) => other !== enemy);
     const cast = enemy.spell && clean ? this.cast(enemy.spell) : undefined;
     return { kind: 'kill', enemy, word, cast };
@@ -580,22 +590,28 @@ export class GameSession {
     const movingMs = Math.max(0, deltaMs - this.frozenMs);
     this.frozenMs = Math.max(0, this.frozenMs - deltaMs);
     this.throttleMs = Math.max(0, this.throttleMs - deltaMs);
-    // A graced demon waits on real time: freeze does not stretch its grace.
+    // A graced demon waits on real time: freeze does not stretch its grace. A slowed demon walks at
+    // the role's slowFactor for its slow's remaining real time.
+    const slowFactor = abilitiesOf(this.heroClass).passive?.slowFactor ?? 1;
     for (const enemy of this.enemies) {
       if (enemy.graceMs !== undefined) enemy.graceMs -= deltaMs;
-      else enemy.distance -= (enemy.speed * movingMs * pace) / 1000;
+      else {
+        const slow = enemy.slowMs !== undefined && enemy.slowMs > 0 ? slowFactor : 1;
+        enemy.distance -= (enemy.speed * movingMs * pace * slow) / 1000;
+      }
+      if (enemy.slowMs !== undefined) enemy.slowMs -= deltaMs;
     }
-    const passive = abilitiesOf(this.heroClass).passive;
-    if (passive) {
+    const graceSeconds = abilitiesOf(this.heroClass).passive?.graceSeconds;
+    if (graceSeconds !== undefined) {
       for (const enemy of this.enemies) {
         if (enemy.graceMs === undefined && enemy.distance <= config.player.hitRadius) {
           enemy.distance = config.player.hitRadius;
-          enemy.graceMs = passive.graceSeconds * 1000;
+          enemy.graceMs = graceSeconds * 1000;
         }
       }
     }
     const reached = this.enemies.filter((enemy) =>
-      passive
+      graceSeconds !== undefined
         ? enemy.graceMs !== undefined && enemy.graceMs <= 0
         : enemy.distance <= config.player.hitRadius,
     );

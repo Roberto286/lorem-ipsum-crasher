@@ -428,6 +428,17 @@ describe('enemies', () => {
     expect(session.enemies.map((e) => e.id)).not.toContain(100);
   });
 
+  it('does not give other roles a grace period', () => {
+    const session = newSession(() => 0, 'normal', 'devops');
+    session.enemies.push(enemy('sit', { distance: config.player.hitRadius, speed: 0 }));
+
+    const { reached } = session.update(16);
+
+    expect(reached.map((e) => e.id)).toEqual([100]);
+    expect(session.lives).toBe(config.player.lives - config.enemyTypes.grunt.damage);
+    expect(session.enemies.map((e) => e.id)).not.toContain(100);
+  });
+
   it('let a junior demon wait out its grace at the hero without costing a life', () => {
     const session = newSession();
     session.enemies.push(enemy('sit', { distance: 0 }));
@@ -1191,6 +1202,57 @@ describe('abilities', () => {
 
     session.update(1000);
     expect(demon.distance).toBeCloseTo(start - 50 * speedScale * seconds - 50);
+  });
+
+  it('slows a demon the devops passive hits for its slow time after a typed word', () => {
+    const session = devops();
+    const demon = enemy('ab', { words: ['ab', 'cd'], speed: 50, distance: 1000 });
+    session.enemies = [demon];
+    const { slowFactor, slowSeconds } = config.classes.devops.passive;
+
+    type(session, 'ab');
+    const start = demon.distance;
+    session.update(1000);
+    expect(demon.distance).toBeCloseTo(start - 50 * slowFactor);
+
+    session.update(slowSeconds * 1000 - 1000);
+    expect(demon.distance).toBeCloseTo(start - 50 * slowFactor * slowSeconds);
+
+    session.update(1000);
+    expect(demon.distance).toBeCloseTo(start - 50 * slowFactor * slowSeconds - 50);
+  });
+
+  it('refreshes the slow when the devops hero types another word on the demon', () => {
+    const session = devops();
+    const demon = enemy('ab', { words: ['ab', 'cd', 'ef'], speed: 50, distance: 1000 });
+    session.enemies = [demon];
+    const { slowFactor, slowSeconds } = config.classes.devops.passive;
+
+    type(session, 'ab');
+    session.update((slowSeconds * 1000) / 2);
+    type(session, 'cd');
+    const step = (slowSeconds * 1000) / 2;
+    const start = demon.distance;
+    session.update(step);
+    expect(demon.distance).toBeCloseTo(start - 50 * slowFactor * (step / 1000));
+    const mid = demon.distance;
+    session.update(step);
+    expect(demon.distance).toBeCloseTo(mid - 50 * slowFactor * (step / 1000));
+    const end = demon.distance;
+    session.update(step);
+    expect(demon.distance).toBeCloseTo(end - 50 * (step / 1000));
+  });
+
+  it('does not slow a demon when a role without a slow passive types a word on it', () => {
+    const session = newSession(() => 0, 'normal', 'junior');
+    const demon = enemy('ab', { words: ['ab', 'cd'], speed: 50, distance: 1000 });
+    session.enemies = [demon];
+
+    type(session, 'ab');
+    expect(demon.slowMs).toBeUndefined();
+    const start = demon.distance;
+    session.update(1000);
+    expect(demon.distance).toBeCloseTo(start - 50);
   });
 
   it('puts the skill on cooldown after use and makes it typable again when it ends', () => {

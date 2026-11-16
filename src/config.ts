@@ -195,8 +195,9 @@ export const config = {
   // ready again that long after use) and an ultimate (command, spell, chargeWords: perfect words
   // that charge it, chargeSeconds: one word of charge per this many seconds, so perfect words
   // stay the main source; emptied on use). Commands are typed while ready and must not share
-  // a prefix with any lorem word. A role may have a passive: graceSeconds (a demon reaching the
-  // hero stops there and costs no life that long, still typeable) and tint (sprite tint while graced).
+  // a prefix with any lorem word. A role may have a passive: graceSeconds (a demon reaching the hero
+  // stops there and costs no life that long, still typeable), tint (sprite tint while graced or slowed),
+  // slowFactor (speed multiplier on a demon the hero has typed a word of, for slowSeconds; a new word refreshes it).
   classes: {
     junior: {
       tint: 0xffffff,
@@ -209,6 +210,8 @@ export const config = {
       tint: 0x9fd8ff,
       skill: { command: 'throttle', spell: 'throttle', cooldownSeconds: 12 },
       ultimate: { command: 'freeze', spell: 'freeze', chargeWords: 20, chargeSeconds: 6 },
+      // Slow: a demon the devops types a word of walks at 80% speed for 2 s. Freeze and throttle stack with it.
+      passive: { tint: 0x9fd8ff, slowFactor: 0.8, slowSeconds: 2 },
     },
     dba: {
       tint: 0xff9a3c,
