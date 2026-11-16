@@ -24,6 +24,7 @@ export class Enemy {
   private frozen = false;
   private throttled = false;
   private graced = false;
+  private slowed = false;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -119,7 +120,15 @@ export class Enemy {
   setThrottled(throttled: boolean): void {
     if (throttled === this.throttled) return;
     this.throttled = throttled;
-    this.sprite.anims.timeScale = throttled ? config.spells.throttle.speedScale : 1;
+    this.refreshWalk();
+  }
+
+  /** Tints the sprite and slows its walk while the devops passive slows the demon. */
+  setSlowed(slowed: boolean): void {
+    if (slowed === this.slowed) return;
+    this.slowed = slowed;
+    this.refreshTint();
+    this.refreshWalk();
   }
 
   /** Tints the sprite while the junior's passive holds the demon at the hero. */
@@ -129,10 +138,19 @@ export class Enemy {
     this.refreshTint();
   }
 
-  /** Freeze tint wins over grace tint, which wins over none. */
+  /** The walk runs at the smallest factor of the slows in effect. */
+  private refreshWalk(): void {
+    const factors = [1];
+    if (this.throttled) factors.push(config.spells.throttle.speedScale);
+    if (this.slowed) factors.push(config.classes.devops.passive.slowFactor);
+    this.sprite.anims.timeScale = Math.min(...factors);
+  }
+
+  /** Freeze tint wins over grace, which wins over slowed, which wins over none. */
   private refreshTint(): void {
     if (this.frozen) this.sprite.setTint(config.spells.freeze.tint);
     else if (this.graced) this.sprite.setTint(config.classes.junior.passive.tint);
+    else if (this.slowed) this.sprite.setTint(config.classes.devops.passive.tint);
     else this.sprite.clearTint();
   }
 

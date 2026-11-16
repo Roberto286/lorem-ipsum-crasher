@@ -299,7 +299,8 @@ export class GameScene extends Phaser.Scene {
       enemy.highlight(matches.includes(state) ? typed.length : 0);
       enemy.setFrozen(this.session.frozen);
       enemy.setGraced(state.graceMs !== undefined);
-      enemy.setThrottled(this.session.throttled || (state.slowMs ?? 0) > 0);
+      enemy.setThrottled(this.session.throttled);
+      enemy.setSlowed((state.slowMs ?? 0) > 0);
     });
   }
 
