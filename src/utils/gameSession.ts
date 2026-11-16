@@ -26,7 +26,9 @@ export type Cast =
   | { spell: 'throttle' }
   | { spell: 'firewall' }
   | { spell: 'linter' }
-  | { spell: 'cache' };
+  | { spell: 'cache' }
+  // changed: the demons whose next word a cut shortened, closest first.
+  | { spell: 'truncate'; changed: EnemyState[] };
 
 export type TypeResult =
   | { kind: 'progress' }
@@ -273,7 +275,44 @@ export class GameSession {
         // A second throttle restarts the timer instead of adding to it.
         this.throttleMs = config.spells.throttle.seconds * 1000;
         return { spell: 'throttle' };
+      case 'truncate':
+        return this.truncate();
     }
+  }
+
+  /**
+   * Cuts the next word of every demon by truncate.letters, closest first. Returns the demons
+   * whose text changed.
+   */
+  private truncate(): Cast {
+    const changed: EnemyState[] = [];
+    const closest = [...this.enemies].sort((a, b) => a.distance - b.distance);
+    for (const enemy of closest) {
+      if (this.cutNextWord(enemy)) changed.push(enemy);
+    }
+    return { spell: 'truncate', changed };
+  }
+
+  /**
+   * Cuts the letters off the end of the enemy's next word. The text keeps a letter and never
+   * ends in a space; a word being typed keeps one letter more than the buffer, so it stays a
+   * match. Takes the longest cut that shares no prefix with another demon's next word, or none
+   * if no cut does. Returns whether the text changed.
+   */
+  private cutNextWord(enemy: EnemyState): boolean {
+    const word = enemy.words[0];
+    const others = this.enemies.filter((other) => other !== enemy).map((other) => other.words[0]);
+    const matching = this.typed !== '' && word.startsWith(this.typed);
+    const floor = matching ? this.typed.length + 1 : 1;
+    const start = Math.max(floor, word.length - config.spells.truncate.letters);
+    for (let keep = start; keep <= word.length; keep++) {
+      const text = word.slice(0, keep).trimEnd();
+      if (text.length < floor) continue;
+      if (others.some((other) => text.startsWith(other) || other.startsWith(text))) continue;
+      enemy.words[0] = text;
+      return text !== word;
+    }
+    return false;
   }
 
   private heal(lives: number): Cast {

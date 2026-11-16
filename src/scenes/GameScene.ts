@@ -191,6 +191,9 @@ export class GameScene extends Phaser.Scene {
   /** Shows a spell that the session has already applied. */
   private showCast(cast: Cast): void {
     if (cast.spell === 'patch' && cast.healed > 0) this.pulseHud();
+    if (cast.spell === 'truncate') {
+      for (const state of cast.changed) this.enemies.get(state.id)?.setWords(state.words);
+    }
   }
 
   private pulseHud(): void {

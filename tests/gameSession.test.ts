@@ -1128,4 +1128,76 @@ describe('abilities', () => {
     session.update(1000);
     expect(demon.distance).toBe(start);
   });
+
+  const dba = () => newSession(() => 0, 'normal', 'dba');
+
+  it("cuts the configured letters from the end of every demon's next word", () => {
+    const session = dba();
+    const { letters } = config.spells.truncate;
+    session.enemies = [enemy('dolore'), enemy('sit', { id: 101, distance: 200 })];
+
+    session.cast('truncate');
+
+    expect(session.enemies[0].words).toEqual(['dolore'.slice(0, -letters)]);
+    expect(session.enemies[1].words).toEqual(['sit'.slice(0, -letters)]);
+  });
+
+  it('never cuts a word below one letter', () => {
+    const session = dba();
+    session.enemies = [enemy('ut')];
+
+    session.cast('truncate');
+    session.cast('truncate');
+
+    expect(session.enemies[0].words).toEqual(['u']);
+  });
+
+  it('keeps the word being typed longer than the buffer', () => {
+    const session = dba();
+    session.enemies = [enemy('dolore')];
+    type(session, 'dolo');
+
+    session.cast('truncate');
+
+    expect(session.enemies[0].words[0]).toBe('dolor');
+    expect(session.enemies[0].words[0].startsWith(session.typed)).toBe(true);
+  });
+
+  it('never leaves two demons whose words share a prefix', () => {
+    const session = dba();
+    session.enemies = [enemy('labore'), enemy('laboris', { id: 101, distance: 200 })];
+
+    session.cast('truncate');
+
+    const [near, far] = session.enemies.map((demon) => demon.words[0]);
+    expect(sharesPrefix(near, far)).toBe(false);
+  });
+
+  it('trims a dangling space on hell phrases', () => {
+    const session = newSession(() => 0, 'hell', 'dba');
+    session.enemies = [enemy('sit ut')];
+
+    session.cast('truncate');
+
+    expect(session.enemies[0].words[0]).toBe('sit');
+  });
+
+  it('leaves later words alone', () => {
+    const session = dba();
+    session.enemies = [enemy('dolore', { words: ['dolore', 'sit'] })];
+
+    session.cast('truncate');
+
+    expect(session.enemies[0].words).toEqual(['dolo', 'sit']);
+  });
+
+  it('puts truncate on cooldown', () => {
+    const session = dba();
+    const { skill } = config.classes.dba;
+
+    type(session, skill.command);
+
+    expect(session.skillReady).toBe(false);
+    expect(type(session, skill.command)[0].kind).toBe('typo');
+  });
 });

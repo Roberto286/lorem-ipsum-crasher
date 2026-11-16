@@ -129,6 +129,9 @@ export const config = {
     // seconds: how long every demon moves at speedScale times its speed. A second throttle
     // restarts the timer. Not carried: only the devops skill casts it.
     throttle: { seconds: 4, speedScale: 0.5 },
+    // letters: letters cut from the end of each demon's next text by the dba skill. The text
+    // keeps at least one letter. Not carried: only the dba skill casts it.
+    truncate: { letters: 2 },
   },
   // Picked in the menu. Harder: enemies spawn closer together and carry more words each.
   // wholePhrase: the words form one phrase that must be typed in a single go, spaces included.
@@ -178,7 +181,10 @@ export const config = {
       skill: { command: 'throttle', spell: 'throttle', cooldownSeconds: 12 },
       ultimate: { command: 'freeze', spell: 'freeze', chargeWords: 20 },
     },
-    dba: { tint: 0xff9a3c },
+    dba: {
+      tint: 0xff9a3c,
+      skill: { command: 'truncate', spell: 'truncate', cooldownSeconds: 10 },
+    },
     cto: { tint: 0xb98cff },
   },
   defaultClass: 'junior',
