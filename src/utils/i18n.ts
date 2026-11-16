@@ -30,6 +30,7 @@ const en = {
   lives: 'LIVES {value}',
   shield: 'FW',
   linter: 'LINT',
+  cache: 'CACHE',
   time: 'TIME {value}s',
   highScores: 'HIGH SCORES',
   highScoreRow: '{rank}. {score}  {seconds}s',

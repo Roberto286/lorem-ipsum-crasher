@@ -932,4 +932,47 @@ describe('spells', () => {
     expect(session.typed).toBe('');
     expect(target.speed).toBe(10 * config.enemy.typoSpeedBoost);
   });
+
+  it('doubles a word score while the cache lasts', () => {
+    const session = newSession();
+    session.enemies = [enemy('ab')];
+    session.cast('cache');
+
+    type(session, 'ab');
+
+    expect(session.score).toBe(2 * config.pointsPerLetter * config.spells.cache.scoreScale);
+  });
+
+  it('lapses after its seconds', () => {
+    const session = newSession();
+    session.cast('cache');
+
+    session.update(config.spells.cache.seconds * 1000 - 1);
+    expect(session.cached).toBe(true);
+
+    session.update(1);
+    expect(session.cached).toBe(false);
+  });
+
+  it('restarts the timer instead of stacking', () => {
+    const session = newSession();
+    session.cast('cache');
+    session.update(4000);
+    session.cast('cache');
+
+    session.update(config.spells.cache.seconds * 1000);
+    expect(session.cached).toBe(false);
+  });
+
+  it('scales points without touching the combo', () => {
+    const session = newSession();
+    session.multiplier = 3;
+    session.enemies = [enemy('ab')];
+    session.cast('cache');
+
+    type(session, 'ab');
+
+    expect(session.multiplier).toBe(3);
+    expect(session.score).toBe(2 * config.pointsPerLetter * 3 * config.spells.cache.scoreScale);
+  });
 });

@@ -24,7 +24,8 @@ export type Cast =
   | { spell: 'patch'; healed: number }
   | { spell: 'freeze' }
   | { spell: 'firewall' }
-  | { spell: 'linter' };
+  | { spell: 'linter' }
+  | { spell: 'cache' };
 
 export type TypeResult =
   | { kind: 'progress' }
@@ -79,6 +80,8 @@ export class GameSession {
   private wordFlawed = false;
   // Milliseconds left of a freeze: while it lasts no demon moves.
   private frozenMs = 0;
+  // Milliseconds left of a cache: while it lasts a word's points are scaled up.
+  private cacheMs = 0;
   lives: number = config.player.lives;
   elapsedMs = 0;
   private untilSpawnMs = 0;
@@ -108,6 +111,7 @@ export class GameSession {
 
   update(deltaMs: number): UpdateResult {
     this.elapsedMs += deltaMs;
+    this.cacheMs = Math.max(0, this.cacheMs - deltaMs);
     const { reached, blocked } = this.advanceEnemies(deltaMs);
     const spawned = [...this.spawnIfDue(deltaMs), ...this.spawnTankIfDue(deltaMs)];
     return { spawned, reached, blocked };
@@ -129,7 +133,8 @@ export class GameSession {
     completed.words.shift();
     // A drop rewards a clean kill: read the flaw before countWord() clears it.
     const clean = !this.wordFlawed;
-    this.score += typed.length * config.pointsPerLetter * this.multiplier;
+    const scale = this.cached ? config.spells.cache.scoreScale : 1;
+    this.score += typed.length * config.pointsPerLetter * this.multiplier * scale;
     this.countWord();
     this.typed = '';
     if (completed.words.length > 0) return { kind: 'word', enemy: completed, word: typed };
@@ -141,6 +146,11 @@ export class GameSession {
   /** No demon moves while a freeze lasts. */
   get frozen(): boolean {
     return this.frozenMs > 0;
+  }
+
+  /** While a cache lasts, each word's points are scaled up. */
+  get cached(): boolean {
+    return this.cacheMs > 0;
   }
 
   /**
@@ -163,6 +173,10 @@ export class GameSession {
         // A second linter does not stack: it sets the forgiven count back to typos.
         this.forgiven = config.spells.linter.typos;
         return { spell: 'linter' };
+      case 'cache':
+        // A second cache restarts the timer instead of adding to it.
+        this.cacheMs = config.spells.cache.seconds * 1000;
+        return { spell: 'cache' };
     }
   }
 

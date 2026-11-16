@@ -113,6 +113,9 @@ export const config = {
     firewall: { weight: 1, color: 0xa0401a, hits: 1, flashMs: 150 },
     // typos: wrong letters forgiven, one per point; a forgiven typo keeps the combo.
     linter: { weight: 1, color: 0x1a8a8a, typos: 1 },
+    // seconds: how long a cache scales the word score; scoreScale: the factor on a word's points.
+    // A second cache restarts the timer instead of adding to it.
+    cache: { weight: 1, color: 0x9a7a10, seconds: 8, scoreScale: 2 },
     // seconds: how long no demon moves. tint: sprite colour of a frozen demon.
     freeze: { seconds: 2, tint: 0x9fd8ff },
   },
