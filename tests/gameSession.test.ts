@@ -1080,13 +1080,13 @@ describe('abilities', () => {
     expect(session.streak).toBe(2);
   });
 
-  it('gives junior a skill but no ultimate, so the ultimate command is a typo', () => {
+  it('gives junior the snippet ultimate, so the devops freeze command is a typo', () => {
     const session = newSession(() => 0, 'normal', 'junior');
-    session.ultimateCharge = ultimate.chargeWords;
+    session.ultimateCharge = config.classes.junior.ultimate.chargeWords;
 
     const results = type(session, ultimate.command);
 
-    expect(session.readyAbilities.map((ability) => ability.command)).toEqual(['tab']);
+    expect(session.readyAbilities.map((ability) => ability.command)).toEqual(['tab', 'snippet']);
     expect(results.every((result) => result.kind === 'typo')).toBe(true);
     expect(session.frozen).toBe(false);
   });
@@ -1181,6 +1181,52 @@ describe('abilities', () => {
     });
     expect(session.score).toBe(0);
     expect(session.skillReady).toBe(false);
+  });
+
+  it('snippet kills the closest demon after its first letters, scoring only the letters left', () => {
+    const session = newSession(() => 0, 'normal', 'junior');
+    const near = enemy('lorem', { words: ['lorem', 'dolor'], distance: 10 });
+    const far = enemy('cat', { id: 101, distance: 200 });
+    session.enemies = [far, near];
+    const multiplier = session.multiplier;
+    session.cast('snippet');
+
+    expect(type(session, 'lo').at(-1)).toMatchObject({ kind: 'kill', enemy: near });
+    expect(session.enemies).toEqual([far]);
+    expect(session.score).toBe(3 * config.pointsPerLetter * multiplier);
+  });
+
+  it('snippet leaves one and two letter words to be typed in full', () => {
+    const session = newSession(() => 0, 'normal', 'junior');
+    const demon = enemy('ab');
+    session.enemies = [demon];
+    const multiplier = session.multiplier;
+    session.cast('snippet');
+
+    expect(type(session, 'ab').at(-1)).toMatchObject({ kind: 'kill', enemy: demon });
+    expect(session.score).toBe(2 * config.pointsPerLetter * multiplier);
+  });
+
+  it('after the snippet window two letters only progress', () => {
+    const session = newSession(() => 0, 'normal', 'junior');
+    session.cast('snippet');
+    session.update(config.spells.snippet.seconds * 1000);
+    const demon = enemy('lorem');
+    session.enemies = [demon];
+
+    expect(type(session, 'lo').at(-1)).toEqual({ kind: 'progress' });
+    expect(session.enemies).toEqual([demon]);
+    expect(demon.words).toEqual(['lorem']);
+  });
+
+  it('a ready command wins over the snippet when the buffer is its prefix', () => {
+    const session = newSession(() => 0, 'normal', 'junior');
+    const demon = enemy('tango');
+    session.enemies = [demon];
+    session.cast('snippet');
+
+    expect(type(session, 'ta').at(-1)).toEqual({ kind: 'progress' });
+    expect(session.enemies).toEqual([demon]);
   });
 
   it('lets freeze stop demons even while throttled', () => {

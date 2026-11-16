@@ -147,6 +147,10 @@ export const config = {
     // Not carried: only the junior skill casts it. Completes the closest demon's next word as if
     // typed perfectly, so a demon whose word is its last dies.
     tab: {},
+    // seconds: how long the junior ultimate lasts. While it does, typing the first letters of the
+    // closest demon's next word correctly kills that demon outright. A second snippet restarts the
+    // timer. Not carried: only the junior ultimate casts it.
+    snippet: { seconds: 6, letters: 2 },
   },
   // Picked in the menu. Harder: enemies spawn closer together and carry more words each.
   // wholePhrase: the words form one phrase that must be typed in a single go, spaces included.
@@ -191,7 +195,11 @@ export const config = {
   // stay the main source; emptied on use). Commands are typed while ready and must not share
   // a prefix with any lorem word.
   classes: {
-    junior: { tint: 0xffffff, skill: { command: 'tab', spell: 'tab', cooldownSeconds: 8 } },
+    junior: {
+      tint: 0xffffff,
+      skill: { command: 'tab', spell: 'tab', cooldownSeconds: 8 },
+      ultimate: { command: 'snippet', spell: 'snippet', chargeWords: 25, chargeSeconds: 7 },
+    },
     devops: {
       tint: 0x9fd8ff,
       skill: { command: 'throttle', spell: 'throttle', cooldownSeconds: 12 },

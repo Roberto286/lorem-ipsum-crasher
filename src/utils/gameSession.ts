@@ -38,7 +38,8 @@ export type Cast =
   // enemy, word, killed: the demon whose next word was completed, its text, and whether that was
   // its last. carried: the spell its clean kill cast, if any. Bare when no demon was on screen.
   | { spell: 'tab'; enemy: EnemyState; word: string; killed: boolean; carried?: Cast }
-  | { spell: 'tab' };
+  | { spell: 'tab' }
+  | { spell: 'snippet' };
 
 export type TypeResult =
   | { kind: 'progress' }
@@ -120,6 +121,8 @@ export class GameSession {
   private cacheMs = 0;
   // Milliseconds left of a descope: while it lasts, the demons it touched type short words.
   private descopeMs = 0;
+  // Milliseconds left of a snippet: while it lasts a demon dies to the first letters of its word.
+  private snippetMs = 0;
   /** Milliseconds until the skill is ready again; 0 when ready. */
   skillCooldownMs = 0;
   /** Charge toward the ultimate: perfect words and time, up to its chargeWords. */
@@ -207,6 +210,7 @@ export class GameSession {
   update(deltaMs: number): UpdateResult {
     this.elapsedMs += deltaMs;
     this.cacheMs = Math.max(0, this.cacheMs - deltaMs);
+    this.snippetMs = Math.max(0, this.snippetMs - deltaMs);
     this.skillCooldownMs = Math.max(0, this.skillCooldownMs - deltaMs);
     const { ultimate } = abilitiesOf(this.heroClass);
     if (ultimate) {
@@ -236,29 +240,45 @@ export class GameSession {
     if (matches.length === 0 && !commandStarted) return this.mistype(typed);
 
     const completed = matches.find((enemy) => this.nextText(enemy) === typed);
-    if (!completed) {
-      this.typed = typed;
-      return { kind: 'progress' };
+    if (completed) return this.completeWord(completed, typed);
+    // The snippet kills the closest demon once the buffer holds its first letters. A ready
+    // command already took that prefix, so it wins.
+    const [closest] = matches;
+    if (
+      this.snippetMs > 0 &&
+      !commandStarted &&
+      closest &&
+      typed.length === config.spells.snippet.letters
+    ) {
+      const word = this.nextText(closest);
+      return this.completeWord(closest, word, word.length - typed.length, true);
     }
-
-    return this.completeWord(completed, typed);
+    this.typed = typed;
+    return { kind: 'progress' };
   }
 
   /**
-   * Completes an enemy's next word, typed as `word`: scores it, counts it, and kills the demon
-   * when that was its last one. A clean kill casts the demon's spell.
+   * Completes an enemy's next word, typed as `word`: scores `scored` of its letters, counts it, and
+   * kills the demon when that was its last one or `outright` says so. A clean kill casts the
+   * demon's spell.
    */
-  private completeWord(enemy: EnemyState, word: string): TypeResult {
-    // A descoped demon dies at its short word, whatever words it had left.
-    const descoped = enemy.descoped !== undefined;
-    if (!descoped) enemy.words.shift();
+  private completeWord(
+    enemy: EnemyState,
+    word: string,
+    scored = word.length,
+    outright = false,
+  ): TypeResult {
+    // A descoped demon dies at its short word, and a snippet kill dies at once: whatever words it
+    // had left.
+    const dies = outright || enemy.descoped !== undefined;
+    if (!dies) enemy.words.shift();
     // A drop rewards a clean kill: read the flaw before countWord() clears it.
     const clean = !this.wordFlawed;
     const scale = this.cached ? config.spells.cache.scoreScale : 1;
-    this.score += word.length * config.pointsPerLetter * this.multiplier * scale;
+    this.score += scored * config.pointsPerLetter * this.multiplier * scale;
     this.countWord();
     this.typed = '';
-    if (!descoped && enemy.words.length > 0) return { kind: 'word', enemy, word };
+    if (!dies && enemy.words.length > 0) return { kind: 'word', enemy, word };
     this.enemies = this.enemies.filter((other) => other !== enemy);
     const cast = enemy.spell && clean ? this.cast(enemy.spell) : undefined;
     return { kind: 'kill', enemy, word, cast };
@@ -336,6 +356,10 @@ export class GameSession {
         return this.descope();
       case 'tab':
         return this.tab();
+      case 'snippet':
+        // A second snippet restarts the timer instead of adding to it.
+        this.snippetMs = config.spells.snippet.seconds * 1000;
+        return { spell: 'snippet' };
     }
   }
 
