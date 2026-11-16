@@ -40,7 +40,7 @@ Scene order (`src/main.ts`): `BootScene` (asset loading, animations, desktop che
 
 Pause: Escape, the button, or window blur/hidden (`Phaser.Core.Events.BLUR` / `HIDDEN`) pause the run. Resuming runs a countdown (`config.pause.resumeCountdownSeconds`) on the scene clock, because tweens stay paused until it ends.
 
-Cross-scene state lives in the Phaser `registry`: `level` and `heroClass` (both set in `BootScene`, changed in `MenuScene`) and `muted` (toggled in `GameScene`, undefined means unmuted). High scores persist in `localStorage` per level through `src/utils/scoreStorage.ts`; zero-point runs are not saved.
+Cross-scene state lives in the Phaser `registry`: `level` and `heroClass` (both set in `BootScene`, changed in `MenuScene`) and `muted` (toggled in `GameScene`, undefined means unmuted). High scores persist in `localStorage` per level and class through `src/utils/scoreStorage.ts`; zero-point runs are not saved.
 
 ## Key Directories
 

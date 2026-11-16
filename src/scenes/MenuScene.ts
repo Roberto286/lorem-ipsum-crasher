@@ -37,8 +37,7 @@ export class MenuScene extends Phaser.Scene {
     this.levelButton = addButton(this, centerX, height * 0.42, '', () => this.shiftLevel(1));
     this.classButton = addButton(this, centerX, height * 0.5, '', () => this.shiftClass(1));
     this.scoresText = addText(this, centerX, height * 0.57, '').setOrigin(0.5, 0);
-    this.showLevel();
-    this.showClass();
+    this.refresh();
     const prompt = addButton(this, centerX, height * 0.94, t('start'), start);
     prompt.setColor(config.colors.accent);
     this.tweens.add({ targets: prompt, alpha: 0.2, duration: 500, yoyo: true, repeat: -1 });
@@ -64,25 +63,23 @@ export class MenuScene extends Phaser.Scene {
 
   private shiftLevel(step: number): void {
     this.registry.set('level', cycle(levelKeys, this.registry.get('level'), step));
-    this.showLevel();
+    this.refresh();
   }
 
   private shiftClass(step: number): void {
     this.registry.set('heroClass', cycle(classKeys, this.registry.get('heroClass'), step));
-    this.showClass();
+    this.refresh();
   }
 
-  private showLevel(): void {
+  /** Redraws both selectors and the high score board of the selected level and class. */
+  private refresh(): void {
     const level: LevelKey = this.registry.get('level');
-    const rows = loadScores(level).map((entry, index) =>
+    const heroClass: ClassKey = this.registry.get('heroClass');
+    const rows = loadScores(level, heroClass).map((entry, index) =>
       t('highScoreRow', { rank: index + 1, score: entry.score, seconds: entry.seconds }),
     );
     this.levelButton.setText(t('difficulty', { level: t(level) }));
-    this.scoresText.setText([t('highScores'), ...rows].join('\n'));
-  }
-
-  private showClass(): void {
-    const heroClass: ClassKey = this.registry.get('heroClass');
     this.classButton.setText(t('heroClass', { name: t(heroClass) }));
+    this.scoresText.setText([t('highScores'), ...rows].join('\n'));
   }
 }

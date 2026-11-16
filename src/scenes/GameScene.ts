@@ -252,7 +252,7 @@ export class GameScene extends Phaser.Scene {
 
   private endRun(): void {
     const run = { score: this.session.score, seconds: Math.floor(this.session.elapsedMs / 1000) };
-    saveScore(this.registry.get('level'), run);
+    saveScore(this.registry.get('level'), this.registry.get('heroClass'), run);
     this.sound.play('gameOver');
     this.scene.start('MenuScene', run);
   }
