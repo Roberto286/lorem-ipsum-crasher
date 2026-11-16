@@ -3,7 +3,7 @@ import { config, type ClassKey } from '../config';
 import { Enemy } from '../entities/Enemy';
 import { Player } from '../entities/Player';
 import { hurlWord } from '../entities/wordProjectile';
-import { GameSession, type Cast } from '../utils/gameSession';
+import { GameSession, type Cast, type EnemyState } from '../utils/gameSession';
 import { t } from '../utils/i18n';
 import { listenForKeys } from '../utils/keyboard';
 import { layoutLabels } from '../utils/labelLayout';
@@ -177,19 +177,8 @@ export class GameScene extends Phaser.Scene {
 
     const result = this.session.typeLetter(letter);
     if (result.kind === 'kill' || result.kind === 'word') {
-      const { kind, enemy: state, word } = result;
       if (result.kind === 'kill' && result.cast) this.showCast(result.cast);
-      // A killed enemy has already left the session: its sprite waits for the word to land.
-      const enemy = kind === 'kill' ? this.removeEnemy(state.id) : this.enemies.get(state.id);
-      if (!enemy) return;
-      enemy.highlight(0);
-      hurlWord(this, word, this.player, enemy.sprite, () => {
-        // Gone already if it reached the player while the word was flying.
-        if (!enemy.sprite.active) return;
-        this.sound.play(kind === 'kill' ? config.enemyTypes[state.type].deathSound : 'kill');
-        if (kind === 'kill') enemy.vanish();
-        else enemy.setWords();
-      });
+      this.hurlWordAt(result.kind === 'kill', result.enemy, result.word);
     } else if (result.kind === 'typo') {
       this.sound.play('error');
     } else if (result.kind === 'error') {
@@ -200,9 +189,31 @@ export class GameScene extends Phaser.Scene {
         this.typedBox.setFillStyle(config.colors.panel),
       );
     } else if (result.kind === 'ability') {
-      this.showCast(result.cast);
-      if (result.cast.spell !== 'drop' || result.cast.killed.length === 0) this.sound.play('kill');
+      const { cast } = result;
+      // The completed word hurls and lands with its sound, so a tab plays no ability sound.
+      if (cast.spell === 'tab' && 'enemy' in cast) {
+        if (cast.carried) this.showCast(cast.carried);
+        this.hurlWordAt(cast.killed, cast.enemy, cast.word);
+      } else {
+        this.showCast(cast);
+        if (cast.spell !== 'drop' || cast.killed.length === 0) this.sound.play('kill');
+      }
     }
+  }
+
+  /** Hurls a word from the hero at the demon it completes; a kill also removes the demon. */
+  private hurlWordAt(killed: boolean, state: EnemyState, word: string): void {
+    // A killed enemy has already left the session: its sprite waits for the word to land.
+    const enemy = killed ? this.removeEnemy(state.id) : this.enemies.get(state.id);
+    if (!enemy) return;
+    enemy.highlight(0);
+    hurlWord(this, word, this.player, enemy.sprite, () => {
+      // Gone already if it reached the player while the word was flying.
+      if (!enemy.sprite.active) return;
+      this.sound.play(killed ? config.enemyTypes[state.type].deathSound : 'kill');
+      if (killed) enemy.vanish();
+      else enemy.setWords();
+    });
   }
 
   /** Shows a spell that the session has already applied. */

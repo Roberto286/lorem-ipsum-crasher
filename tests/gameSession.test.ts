@@ -491,7 +491,7 @@ describe('hell level', () => {
     expect(type(session, 'six').at(-1)?.kind).toBe('error');
     expect(session.typed).toBe('');
 
-    expect(type(session, 't').at(-1)?.kind).toBe('error');
+    expect(type(session, 'z').at(-1)?.kind).toBe('error');
     expect(session.enemies).toHaveLength(1);
 
     expect(type(session, 'sit').at(-1)?.kind).toBe('kill');
@@ -1080,13 +1080,13 @@ describe('abilities', () => {
     expect(session.streak).toBe(2);
   });
 
-  it('gives a role without abilities no commands', () => {
+  it('gives junior a skill but no ultimate, so the ultimate command is a typo', () => {
     const session = newSession(() => 0, 'normal', 'junior');
     session.ultimateCharge = ultimate.chargeWords;
 
     const results = type(session, ultimate.command);
 
-    expect(session.readyAbilities).toEqual([]);
+    expect(session.readyAbilities.map((ability) => ability.command)).toEqual(['tab']);
     expect(results.every((result) => result.kind === 'typo')).toBe(true);
     expect(session.frozen).toBe(false);
   });
@@ -1135,6 +1135,52 @@ describe('abilities', () => {
     later.update(skill.cooldownSeconds * 1000);
     expect(later.skillReady).toBe(true);
     expect(type(later, skill.command).at(-1)?.kind).toBe('ability');
+  });
+
+  it('tab completes the closest demon next word and keeps that demon alive while words remain', () => {
+    const { skill } = config.classes.junior;
+    const session = newSession(() => 0, 'normal', 'junior');
+    const near = enemy('sit', { words: ['sit', 'dolor'], distance: 10 });
+    const far = enemy('cat', { id: 101, distance: 200 });
+    session.enemies = [far, near];
+    const multiplier = session.multiplier;
+
+    expect(type(session, skill.command).at(-1)).toMatchObject({
+      kind: 'ability',
+      ability: 'skill',
+      cast: { spell: 'tab', killed: false },
+    });
+    expect(near.words).toEqual(['dolor']);
+    expect(far.words).toEqual(['cat']);
+    expect(session.enemies).toHaveLength(2);
+    expect(session.score).toBe(3 * config.pointsPerLetter * multiplier);
+    expect(session.skillReady).toBe(false);
+  });
+
+  it('tab kills a demon on its last word and casts its carried spell', () => {
+    const { skill } = config.classes.junior;
+    const session = newSession(() => 0, 'normal', 'junior');
+    session.enemies = [enemy('sit', { spell: 'cache' })];
+
+    expect(type(session, skill.command).at(-1)).toMatchObject({
+      kind: 'ability',
+      cast: { spell: 'tab', killed: true, carried: { spell: 'cache' } },
+    });
+    expect(session.enemies).toEqual([]);
+    expect(session.cached).toBe(true);
+  });
+
+  it('tab with no demon on screen casts nothing but still starts its cooldown', () => {
+    const { skill } = config.classes.junior;
+    const session = newSession(() => 0, 'normal', 'junior');
+
+    expect(type(session, skill.command).at(-1)).toEqual({
+      kind: 'ability',
+      ability: 'skill',
+      cast: { spell: 'tab' },
+    });
+    expect(session.score).toBe(0);
+    expect(session.skillReady).toBe(false);
   });
 
   it('lets freeze stop demons even while throttled', () => {

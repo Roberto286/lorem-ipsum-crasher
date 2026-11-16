@@ -34,7 +34,11 @@ export type Cast =
   // killed: every demon the drop removed, with its texts.
   | { spell: 'drop'; killed: EnemyState[] }
   | { spell: 'pushback' }
-  | { spell: 'descope'; changed: EnemyState[] };
+  | { spell: 'descope'; changed: EnemyState[] }
+  // enemy, word, killed: the demon whose next word was completed, its text, and whether that was
+  // its last. carried: the spell its clean kill cast, if any. Bare when no demon was on screen.
+  | { spell: 'tab'; enemy: EnemyState; word: string; killed: boolean; carried?: Cast }
+  | { spell: 'tab' };
 
 export type TypeResult =
   | { kind: 'progress' }
@@ -65,7 +69,7 @@ export interface ReadyAbility {
   spell: SpellKey;
 }
 
-/** The abilities a role may have: junior has none, the others have one or both. */
+/** The abilities a role may have: every role has a skill; devops, dba and cto also an ultimate. */
 interface RoleAbilities {
   // Every role has a tint: it keeps junior's `{ tint }` from being a weak, all-optional type.
   tint: number;
@@ -237,20 +241,45 @@ export class GameSession {
       return { kind: 'progress' };
     }
 
+    return this.completeWord(completed, typed);
+  }
+
+  /**
+   * Completes an enemy's next word, typed as `word`: scores it, counts it, and kills the demon
+   * when that was its last one. A clean kill casts the demon's spell.
+   */
+  private completeWord(enemy: EnemyState, word: string): TypeResult {
     // A descoped demon dies at its short word, whatever words it had left.
-    const descoped = completed.descoped !== undefined;
-    if (!descoped) completed.words.shift();
+    const descoped = enemy.descoped !== undefined;
+    if (!descoped) enemy.words.shift();
     // A drop rewards a clean kill: read the flaw before countWord() clears it.
     const clean = !this.wordFlawed;
     const scale = this.cached ? config.spells.cache.scoreScale : 1;
-    this.score += typed.length * config.pointsPerLetter * this.multiplier * scale;
+    this.score += word.length * config.pointsPerLetter * this.multiplier * scale;
     this.countWord();
     this.typed = '';
-    if (!descoped && completed.words.length > 0)
-      return { kind: 'word', enemy: completed, word: typed };
-    this.enemies = this.enemies.filter((enemy) => enemy !== completed);
-    const cast = completed.spell && clean ? this.cast(completed.spell) : undefined;
-    return { kind: 'kill', enemy: completed, word: typed, cast };
+    if (!descoped && enemy.words.length > 0) return { kind: 'word', enemy, word };
+    this.enemies = this.enemies.filter((other) => other !== enemy);
+    const cast = enemy.spell && clean ? this.cast(enemy.spell) : undefined;
+    return { kind: 'kill', enemy, word, cast };
+  }
+
+  /**
+   * Completes the closest demon's next word as if typed perfectly, and clears the buffer. With
+   * no demon on screen it does nothing. A demon killed this way casts its carried spell too.
+   */
+  private tab(): Cast {
+    this.typed = '';
+    const [closest] = this.matching('');
+    if (!closest) return { spell: 'tab' };
+    // The perfect word starts clean: a wrong letter that was in the buffer is not its flaw.
+    this.wordFlawed = false;
+    const word = this.nextText(closest);
+    const result = this.completeWord(closest, word);
+    if (result.kind === 'kill') {
+      return { spell: 'tab', enemy: closest, word, killed: true, carried: result.cast };
+    }
+    return { spell: 'tab', enemy: closest, word, killed: false };
   }
 
   /** No demon moves while a freeze lasts. */
@@ -270,7 +299,8 @@ export class GameSession {
 
   /**
    * Casts a spell at once, whoever asks: a carrier that was just killed, or the hero. Spells
-   * score no combo points and leave the multiplier and the streak alone.
+   * score no combo points and leave the multiplier and the streak alone. Tab is the exception:
+   * it completes a word, which counts like a typed one.
    */
   cast(spell: SpellKey): Cast {
     switch (spell) {
@@ -304,6 +334,8 @@ export class GameSession {
         return this.pushback();
       case 'descope':
         return this.descope();
+      case 'tab':
+        return this.tab();
     }
   }
 

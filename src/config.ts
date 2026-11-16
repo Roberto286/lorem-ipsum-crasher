@@ -144,6 +144,9 @@ export const config = {
     // short word, at least letters long; typing it kills the demon whatever words it had left.
     // Not carried: only the cto ultimate casts it.
     descope: { seconds: 6, letters: 3 },
+    // Not carried: only the junior skill casts it. Completes the closest demon's next word as if
+    // typed perfectly, so a demon whose word is its last dies.
+    tab: {},
   },
   // Picked in the menu. Harder: enemies spawn closer together and carry more words each.
   // wholePhrase: the words form one phrase that must be typed in a single go, spaces included.
@@ -185,10 +188,10 @@ export const config = {
   // white leaves the art unchanged. A role may have a skill (command, spell, cooldownSeconds:
   // ready again that long after use) and an ultimate (command, spell, chargeWords: perfect words
   // that charge it, chargeSeconds: one word of charge per this many seconds, so perfect words
-  // stay the main source; emptied on use). Commands are typed while ready and must not share a
-  // prefix with any lorem word.
+  // stay the main source; emptied on use). Commands are typed while ready and must not share
+  // a prefix with any lorem word.
   classes: {
-    junior: { tint: 0xffffff },
+    junior: { tint: 0xffffff, skill: { command: 'tab', spell: 'tab', cooldownSeconds: 8 } },
     devops: {
       tint: 0x9fd8ff,
       skill: { command: 'throttle', spell: 'throttle', cooldownSeconds: 12 },
