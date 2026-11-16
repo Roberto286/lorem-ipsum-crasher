@@ -1576,6 +1576,51 @@ describe('abilities', () => {
     expect(session.enemies.map((state) => state.distance)).toEqual([halfWidth, halfWidth]);
   });
 
+  it('pushes back the demon a cto word hits by the passive distance', () => {
+    const session = cto();
+    const hit = enemy('ab', { words: ['ab', 'cd'], distance: 100 });
+    const other = enemy('xy', { id: 101, words: ['xy'], distance: 100 });
+    session.enemies = [hit, other];
+
+    type(session, 'ab');
+
+    expect(hit.distance).toBe(100 + config.classes.cto.passive.pushPixels);
+    expect(other.distance).toBe(100);
+  });
+
+  it('never pushes a cto-hit demon past its edge', () => {
+    const session = cto();
+    const hit = enemy('ab', { words: ['ab', 'cd'], distance: halfWidth - 1 });
+    session.enemies = [hit];
+
+    type(session, 'ab');
+
+    expect(hit.distance).toBe(halfWidth);
+  });
+
+  it('does not push a demon the cto kills', () => {
+    const session = cto();
+    const hit = enemy('ab', { distance: 100 });
+    session.enemies = [hit];
+
+    type(session, 'ab');
+
+    expect(session.enemies).toHaveLength(0);
+    expect(hit.distance).toBe(100);
+  });
+
+  it('does not push back a hit demon for the other roles', () => {
+    for (const role of ['junior', 'devops', 'dba'] as const) {
+      const session = newSession(() => 0, 'normal', role);
+      const hit = enemy('ab', { words: ['ab', 'cd'], distance: 100 });
+      session.enemies = [hit];
+
+      type(session, 'ab');
+
+      expect(hit.distance).toBe(100);
+    }
+  });
+
   it('puts pushback on cooldown', () => {
     const session = cto();
     const { skill } = config.classes.cto;

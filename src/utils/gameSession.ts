@@ -93,6 +93,7 @@ interface RoleAbilities {
    * graceSeconds: a demon reaching the hero waits that long before it costs a life. slowFactor and
    * slowSeconds: a word typed on a demon slows it to that speed multiplier for that long.
    * burnLetters: each kill cuts that many letters off the closest surviving demon's next word.
+   * pushPixels: a word that leaves the demon alive pushes it back that far, never past its edge.
    */
   passive?: {
     tint?: number;
@@ -100,6 +101,7 @@ interface RoleAbilities {
     slowFactor?: number;
     slowSeconds?: number;
     burnLetters?: number;
+    pushPixels?: number;
   };
 }
 
@@ -304,9 +306,11 @@ export class GameSession {
     this.countWord();
     this.typed = '';
     if (!dies && enemy.words.length > 0) {
-      // A typed word slows the demon the role's passive says, refreshing any slow already on it.
+      // A typed word slows or pushes back the demon as the role's passive says; a new slow
+      // refreshes any already on it.
       const passive = abilitiesOf(this.heroClass).passive;
       if (passive?.slowSeconds !== undefined) enemy.slowMs = passive.slowSeconds * 1000;
+      if (passive?.pushPixels !== undefined) this.pushBack(enemy, passive.pushPixels);
       return { kind: 'word', enemy, word };
     }
     this.enemies = this.enemies.filter((other) => other !== enemy);
@@ -476,11 +480,12 @@ export class GameSession {
 
   /** Pushes every demon back by pushback.pixels, never past the edge it came in from. */
   private pushback(): Cast {
-    for (const enemy of this.enemies) {
-      const edge = this.edgeDistance(enemy.angle);
-      enemy.distance = Math.min(edge, enemy.distance + config.spells.pushback.pixels);
-    }
+    for (const enemy of this.enemies) this.pushBack(enemy, config.spells.pushback.pixels);
     return { spell: 'pushback' };
+  }
+
+  private pushBack(enemy: EnemyState, pixels: number): void {
+    enemy.distance = Math.min(this.edgeDistance(enemy.angle), enemy.distance + pixels);
   }
 
   /**

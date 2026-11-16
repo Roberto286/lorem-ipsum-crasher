@@ -198,7 +198,8 @@ export const config = {
   // a prefix with any lorem word. A role may have a passive: graceSeconds (a demon reaching the hero
   // stops there and costs no life that long, still typeable), tint (sprite tint while graced or slowed),
   // slowFactor (speed multiplier on a demon the hero has typed a word of, for slowSeconds; a new word refreshes it).
-  // burnLetters (letters cut off the closest surviving demon's next word on each kill).
+  // burnLetters (letters cut off the closest surviving demon's next word on each kill),
+  // pushPixels (pixels a demon the hero types a word of, without killing it, is pushed back).
   classes: {
     junior: {
       tint: 0xffffff,
@@ -226,6 +227,8 @@ export const config = {
       tint: 0xb98cff,
       skill: { command: 'pushback', spell: 'pushback', cooldownSeconds: 8 },
       ultimate: { command: 'descope', spell: 'descope', chargeWords: 25, chargeSeconds: 7 },
+      // Push: each word the cto types that leaves the demon alive pushes it back 8 px, never past its edge.
+      passive: { pushPixels: 8 },
     },
   },
   defaultClass: 'junior',
