@@ -19,6 +19,12 @@ const enemy = (word: string, overrides: Partial<EnemyState> = {}): EnemyState =>
 });
 const type = (session: GameSession, text: string) =>
   [...text].map((letter) => session.typeLetter(letter));
+/** Answers the first rng call of a session, the type roll of its first spawn, with `roll`. */
+const rollThen = (roll: number, rest: () => number) => {
+  let calls = 0;
+  return () => (calls++ === 0 ? roll : rest());
+};
+const sharesPrefix = (a: string, b: string) => a.startsWith(b) || b.startsWith(a);
 
 describe('spawning', () => {
   it('spawns the first enemy on the side edge of the arena', () => {
@@ -49,7 +55,8 @@ describe('spawning', () => {
   it('spawns grunts at the curve speed scaled and capped by their type', () => {
     const { speedScale, maxSpeed } = config.enemyTypes.grunt;
     const [early] = newSession().update(16).spawned;
-    const [late] = newSession().update(100_000_000).spawned;
+    // A high roll: late in a run a low one would send a kamikaze instead.
+    const [late] = newSession(() => 0.99).update(100_000_000).spawned;
 
     expect(early.type).toBe('grunt');
     expect(early.speed).toBeCloseTo(difficultyAt(0, 'normal').enemySpeed * speedScale, 1);
@@ -66,6 +73,81 @@ describe('spawning', () => {
 
     expect(new Set(wordCounts('easy'))).toEqual(new Set([1]));
     expect(new Set(wordCounts('hard'))).toEqual(new Set([1, 2, 3]));
+  });
+});
+
+describe('kamikazes', () => {
+  const { kamikaze } = config.enemyTypes;
+  const [, [kneeSeconds], [lateSeconds]] = config.difficulty.kamikazeChance;
+  const levels = Object.keys(config.levels) as LevelKey[];
+  const spawnAt = (seconds: number, rng: () => number, level: LevelKey = 'normal') =>
+    newSession(rng, level).update(seconds * 1000).spawned[0];
+  /** A forced kamikaze per level and per rng value from 0 to 0.99. */
+  const sweep = () =>
+    levels.flatMap((level) =>
+      Array.from({ length: 100 }, (_, index) =>
+        spawnAt(
+          lateSeconds,
+          rollThen(0, () => index / 100),
+          level,
+        ),
+      ),
+    );
+
+  it('take the place of a grunt when the roll falls under their chance', () => {
+    const { kamikazeChance } = difficultyAt(lateSeconds, 'normal');
+
+    expect(spawnAt(lateSeconds, () => kamikazeChance / 2).type).toBe('kamikaze');
+    expect(spawnAt(lateSeconds, () => kamikazeChance).type).toBe('grunt');
+  });
+
+  it('carry one short word on every level', () => {
+    for (const { type, words } of sweep()) {
+      expect(type).toBe('kamikaze');
+      expect(words).toHaveLength(1);
+      expect(words[0]).toMatch(/^[a-z]+$/);
+      expect(words[0].length).toBeLessThanOrEqual(kamikaze.maxWordLength);
+    }
+  });
+
+  it('always enter through the left or right edge, clear of its corners', () => {
+    const spawned = sweep();
+
+    for (const { angle, distance } of spawned) {
+      expect(Math.abs(Math.cos(angle)) * distance).toBeCloseTo(halfWidth);
+      expect(Math.abs(Math.sin(angle)) * distance).toBeLessThan(halfHeight);
+    }
+    expect(new Set(spawned.map(({ angle }) => Math.sign(Math.cos(angle))))).toEqual(
+      new Set([1, -1]),
+    );
+  });
+
+  it('outrun grunts, but never their own speed cap', () => {
+    const atKnee = spawnAt(
+      kneeSeconds,
+      rollThen(0, () => 0.5),
+    );
+    const gruntAtKnee = spawnAt(kneeSeconds, () => 0.99);
+    const endless = spawnAt(
+      100_000,
+      rollThen(0, () => 0.5),
+    );
+
+    expect(atKnee.speed).toBeGreaterThan(gruntAtKnee.speed);
+    expect(atKnee.speed).toBeLessThanOrEqual(kamikaze.maxSpeed);
+    expect(endless.speed).toBe(kamikaze.maxSpeed);
+  });
+
+  it('never share a prefix with a word on screen', () => {
+    const onScreen = ['dolore', 'incididunt', 'exercitation', 'ut', 'sit'];
+
+    for (let index = 0; index < 100; index++) {
+      const session = newSession(rollThen(0, () => index / 100));
+      session.enemies.push(enemy(onScreen[0], { words: [...onScreen] }));
+      const [spawned] = session.update(lateSeconds * 1000).spawned;
+
+      expect(onScreen.filter((word) => sharesPrefix(word, spawned.words[0]))).toEqual([]);
+    }
   });
 });
 

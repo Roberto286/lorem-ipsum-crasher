@@ -31,6 +31,7 @@ describe('difficultyAt', () => {
       speed: b.enemySpeed - a.enemySpeed,
       spawnCut: a.spawnIntervalMs - b.spawnIntervalMs,
       wordLength: b.maxWordLength - a.maxWordLength,
+      kamikazeChance: b.kamikazeChance - a.kamikazeChance,
     };
   };
 
@@ -41,12 +42,32 @@ describe('difficultyAt', () => {
     expect(after.speed).toBeGreaterThan(before.speed);
     expect(after.spawnCut).toBeGreaterThan(before.spawnCut);
     expect(after.wordLength).toBeGreaterThan(before.wordLength);
+    expect(after.kamikazeChance).toBeGreaterThan(before.kamikazeChance);
   });
 
   it('stays within the configured limits in an endless run', () => {
     const late = difficultyAt(100_000, 'easy');
 
     expect(late.spawnIntervalMs).toBe(config.difficulty.minSpawnIntervalMs);
+    expect(late.kamikazeChance).toBe(
+      config.difficulty.maxKamikazeChance * config.levels.easy.kamikazeChanceScale,
+    );
+  });
+
+  it('sends no kamikazes at the start, then more and more of them', () => {
+    const chanceAt = (seconds: number) => difficultyAt(seconds, 'normal').kamikazeChance;
+
+    for (const level of ['easy', 'normal', 'hard', 'hell'] as const) {
+      expect(difficultyAt(0, level).kamikazeChance).toBe(0);
+    }
+    expect(chanceAt(knee)).toBeGreaterThan(0);
+    expect(chanceAt(knee + 30)).toBeGreaterThan(chanceAt(knee));
+  });
+
+  it('sends fewer kamikazes on easy', () => {
+    expect(difficultyAt(knee, 'easy').kamikazeChance).toBeLessThan(
+      difficultyAt(knee, 'normal').kamikazeChance,
+    );
   });
 
   it('returns whole word lengths', () => {

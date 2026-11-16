@@ -167,29 +167,50 @@ export class GameSession {
 
     const difficulty = difficultyAt(this.elapsedMs / 1000, this.level);
     this.untilSpawnMs += difficulty.spawnIntervalMs;
+    if (this.rng() < difficulty.kamikazeChance) {
+      const word = this.pickWords(1, config.enemyTypes.kamikaze.maxWordLength);
+      return [this.spawn('kamikaze', this.sideAngle(), word, difficulty.enemySpeed)];
+    }
     const angle = this.rng() * Math.PI * 2;
-    const taken = this.enemies.flatMap((active) => active.words);
-    const { speedScale, maxSpeed } = config.enemyTypes.grunt;
     const wordCount = 1 + Math.floor(this.rng() * difficulty.maxWords);
+    const words = this.pickWords(wordCount, difficulty.maxWordLength);
+    const texts = config.levels[this.level].wholePhrase ? [words.join(' ')] : words;
+    return [this.spawn('grunt', angle, texts, difficulty.enemySpeed)];
+  }
+
+  /** Words clear of prefix collisions with everything on screen and with each other. */
+  private pickWords(count: number, maxLength: number): string[] {
+    const taken = this.enemies.flatMap((active) => active.words);
     // Each pick joins the list the next one must avoid, the enemy's own words included.
-    const words = Array.from({ length: wordCount }, () => {
-      const word = pickWord(difficulty.maxWordLength, taken, this.rng);
+    return Array.from({ length: count }, () => {
+      const word = pickWord(maxLength, taken, this.rng);
       taken.push(word);
       return word;
     });
+  }
+
+  /** An angle whose ray leaves the arena through the left or right edge. */
+  private sideAngle(): number {
+    const side = this.rng() < 0.5 ? 1 : -1;
+    const y = (this.rng() * 2 - 1) * this.halfHeight * config.enemy.sideEntryShare;
+    return Math.atan2(y, side * this.halfWidth);
+  }
+
+  private spawn(type: EnemyType, angle: number, words: string[], baseSpeed: number): EnemyState {
+    const { speedScale, maxSpeed } = config.enemyTypes[type];
     const enemy: EnemyState = {
       id: this.nextId++,
-      type: 'grunt',
-      words: config.levels[this.level].wholePhrase ? [words.join(' ')] : words,
+      type,
+      words,
       angle,
       // Distance from the center to the arena edge along this angle.
       distance: Math.min(
         this.halfWidth / Math.abs(Math.cos(angle)),
         this.halfHeight / Math.abs(Math.sin(angle)),
       ),
-      speed: Math.min(maxSpeed, difficulty.enemySpeed * speedScale),
+      speed: Math.min(maxSpeed, baseSpeed * speedScale),
     };
     this.enemies.push(enemy);
-    return [enemy];
+    return enemy;
   }
 }

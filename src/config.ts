@@ -33,12 +33,24 @@ export const config = {
   // typoSpeedBoost: speed multiplier for the targeted enemy each time its word is mistyped.
   // spawnBehindPanels: pixels past the play band where top and bottom demons start, hidden by
   // the hud strip and the typed box, so they take as long to arrive as before the strip existed.
-  enemy: { vanishMs: 250, labelGap: 2, typoSpeedBoost: 1.3, spawnBehindPanels: 12 },
+  // sideEntryShare: demons that enter from the left or right start within this middle share of
+  // the edge, so they are never hidden behind the hud strip or the typed box.
+  enemy: {
+    vanishMs: 250,
+    labelGap: 2,
+    typoSpeedBoost: 1.3,
+    spawnBehindPanels: 12,
+    sideEntryShare: 0.8,
+  },
   // One entry per demon type. sprite: sheet and animation key. speedScale: multiplier on the
   // difficulty.enemySpeed curve; maxSpeed: cap on the result, in pixels per second.
   // damage: lives lost when the demon reaches the hero.
   enemyTypes: {
     grunt: { sprite: 'chort', speedScale: 1, maxSpeed: 80, damage: 1 },
+    // Carries one word of up to maxWordLength letters on every level and enters from the sides
+    // only: the top and bottom edges are so close that it would arrive in under a second.
+    // maxSpeed leaves about 2.5 s to type that word from the nearest point of a side edge.
+    kamikaze: { sprite: 'imp', speedScale: 2.5, maxSpeed: 90, damage: 1, maxWordLength: 4 },
   },
   // The typed word flies from the hero to the demon before it takes effect.
   projectile: { flightMs: 220, spins: 1 },
@@ -62,11 +74,36 @@ export const config = {
   // wholePhrase: the words form one phrase that must be typed in a single go, spaces included.
   // erasableTypos: a wrong letter stays in the buffer until erased with Backspace; without it a
   // wrong letter resets the buffer and speeds up the target.
+  // kamikazeChanceScale: multiplier on the difficulty.kamikazeChance curve.
   levels: {
-    easy: { spawnIntervalScale: 1.3, maxWordsPerEnemy: 1, wholePhrase: false, erasableTypos: true },
-    normal: { spawnIntervalScale: 1, maxWordsPerEnemy: 2, wholePhrase: false, erasableTypos: true },
-    hard: { spawnIntervalScale: 0.8, maxWordsPerEnemy: 3, wholePhrase: false, erasableTypos: true },
-    hell: { spawnIntervalScale: 0.8, maxWordsPerEnemy: 3, wholePhrase: true, erasableTypos: false },
+    easy: {
+      spawnIntervalScale: 1.3,
+      maxWordsPerEnemy: 1,
+      wholePhrase: false,
+      erasableTypos: true,
+      kamikazeChanceScale: 0.5,
+    },
+    normal: {
+      spawnIntervalScale: 1,
+      maxWordsPerEnemy: 2,
+      wholePhrase: false,
+      erasableTypos: true,
+      kamikazeChanceScale: 1,
+    },
+    hard: {
+      spawnIntervalScale: 0.8,
+      maxWordsPerEnemy: 3,
+      wholePhrase: false,
+      erasableTypos: true,
+      kamikazeChanceScale: 1,
+    },
+    hell: {
+      spawnIntervalScale: 0.8,
+      maxWordsPerEnemy: 3,
+      wholePhrase: true,
+      erasableTypos: false,
+      kamikazeChanceScale: 1,
+    },
   },
   defaultLevel: 'normal',
   // v2: combo scoring changed what a score is worth, so the v1 boards are no longer comparable.
@@ -89,7 +126,15 @@ export const config = {
       [90, 8],
       [180, 13],
     ],
+    // Chance that a regular spawn is a kamikaze instead of a grunt, held between 0 and
+    // maxKamikazeChance. It starts below zero to keep the opening of a run free of them.
+    kamikazeChance: [
+      [0, -0.05],
+      [90, 0.1],
+      [180, 0.3],
+    ],
     minSpawnIntervalMs: 400,
+    maxKamikazeChance: 0.35,
   },
 } as const;
 
