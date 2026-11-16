@@ -15,7 +15,7 @@ export interface EnemyState {
   distance: number;
   speed: number;
   /** Cast when the enemy is killed by typing; lost if it reaches the player. */
-  spell?: SpellKey;
+  spell?: CarriedSpell;
 }
 
 /** What a spell did, for the scene to show. */
@@ -39,12 +39,22 @@ export interface UpdateResult {
   reached: EnemyState[];
 }
 
+/** The spells a demon can carry: the keys of config.spells that have a weight. */
+export type CarriedSpell = {
+  [K in SpellKey]: (typeof config.spells)[K] extends { weight: number } ? K : never;
+}[SpellKey];
+
+const carriedSpells = (Object.keys(config.spells) as SpellKey[]).filter(
+  (spell): spell is CarriedSpell => 'weight' in config.spells[spell],
+);
+
 /** The spell at `roll` (0 to 1) along the configured weights. */
-function spellAt(roll: number): SpellKey {
-  const spells = Object.keys(config.spells) as SpellKey[];
-  const total = spells.reduce((sum, spell) => sum + config.spells[spell].weight, 0);
+function spellAt(roll: number): CarriedSpell {
+  const total = carriedSpells.reduce((sum, spell) => sum + config.spells[spell].weight, 0);
   let left = roll * total;
-  return spells.find((spell) => (left -= config.spells[spell].weight) < 0) ?? spells[0];
+  return (
+    carriedSpells.find((spell) => (left -= config.spells[spell].weight) < 0) ?? carriedSpells[0]
+  );
 }
 
 /** Whole game state and rules, free of rendering so it runs in tests. */
@@ -108,12 +118,14 @@ export class GameSession {
     }
 
     completed.words.shift();
+    // A drop rewards a clean kill: read the flaw before countWord() clears it.
+    const clean = !this.wordFlawed;
     this.score += typed.length * config.pointsPerLetter * this.multiplier;
     this.countWord();
     this.typed = '';
     if (completed.words.length > 0) return { kind: 'word', enemy: completed, word: typed };
     this.enemies = this.enemies.filter((enemy) => enemy !== completed);
-    const cast = completed.spell ? this.cast(completed.spell) : undefined;
+    const cast = completed.spell && clean ? this.cast(completed.spell) : undefined;
     return { kind: 'kill', enemy: completed, word: typed, cast };
   }
 

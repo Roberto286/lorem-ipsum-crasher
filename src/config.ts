@@ -100,15 +100,16 @@ export const config = {
   typedBox: { height: 24, errorFlashMs: 150, maxLetters: 40 },
   // Opaque strip on top of the screen: score, lives and time on the left, buttons on the right.
   hud: { height: 24, padding: 4 },
-  // Some demons carry a spell, cast when the carrier is killed by typing; GameSession.cast is
-  // the one entry point. weight: relative odds among the carried spells. color: label background
-  // of the carrier.
+  // Carried spells (weight and color) drop from some demons and act on the hero, but only on a
+  // clean kill: the carrier's last word typed with no wrong letter. The others, like freeze, are
+  // cast by the hero roles. GameSession.cast is the one entry point. weight: relative odds among
+  // the carried spells. color: label background of the carrier.
   spells: {
     // lives: lives given back, up to player.lives. The HUD text swells to pulseScale and back,
     // pulseMs each way.
     heal: { weight: 1, color: 0x1e8a3c, lives: 1, pulseMs: 150, pulseScale: 1.2 },
     // seconds: how long no demon moves. tint: sprite colour of a frozen demon.
-    freeze: { weight: 1, color: 0x2a6fb0, seconds: 2, tint: 0x9fd8ff },
+    freeze: { seconds: 2, tint: 0x9fd8ff },
   },
   // Picked in the menu. Harder: enemies spawn closer together and carry more words each.
   // wholePhrase: the words form one phrase that must be typed in a single go, spaces included.

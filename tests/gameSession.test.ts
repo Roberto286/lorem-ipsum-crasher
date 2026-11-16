@@ -774,16 +774,50 @@ describe('spells', () => {
     expect(demon.distance).toBeCloseTo(start - demon.speed);
   });
 
-  it('reports the freeze of a carrier killed by typing', () => {
+  it('casts freeze when asked directly', () => {
     const session = newSession();
-    session.enemies = [enemy('ab', { spell: 'freeze' })];
+
+    expect(session.cast('freeze')).toEqual({ spell: 'freeze' });
+    expect(session.frozen).toBe(true);
+  });
+
+  it('never gives a demon the freeze spell', () => {
+    for (let i = 0; i < 100; i++) {
+      const roll = (spellChance * i) / 100;
+      const { spawned } = newSession(() => roll).update(lateMs);
+      expect(spawned[0].spell).toBeDefined();
+      expect(spawned[0].spell).not.toBe('freeze');
+    }
+  });
+
+  it('drops nothing when the last word of a carrier had a wrong letter', () => {
+    const session = newSession(() => 0, 'easy');
+    session.lives = config.player.lives - config.spells.heal.lives;
+    session.enemies = [enemy('ab', { spell: 'heal' })];
+
+    type(session, 'x');
+    session.eraseLetter();
 
     expect(type(session, 'ab').at(-1)).toEqual({
       kind: 'kill',
       enemy: expect.objectContaining({ id: 100 }),
       word: 'ab',
-      cast: { spell: 'freeze' },
+      cast: undefined,
     });
-    expect(session.frozen).toBe(true);
+    expect(session.lives).toBe(config.player.lives - config.spells.heal.lives);
+  });
+
+  it('drops nothing on hell when the last word of a carrier had a wrong letter', () => {
+    const session = newSession(() => 0, 'hell');
+    session.enemies = [enemy('ab', { spell: 'heal' })];
+
+    type(session, 'ax');
+
+    expect(type(session, 'ab').at(-1)).toEqual({
+      kind: 'kill',
+      enemy: expect.objectContaining({ id: 100 }),
+      word: 'ab',
+      cast: undefined,
+    });
   });
 });
