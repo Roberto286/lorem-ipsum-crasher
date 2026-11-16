@@ -194,11 +194,32 @@ def laugh_tank():
     return out
 
 
+def screech_kamikaze():
+    """0.30 s warning screech: a rising, vibrating saw/triangle with a nasal band-pass and hiss."""
+    n = samples(0.30)
+    t = [i / RATE for i in range(n)]
+    vibrato = [1 + 0.03 * math.sin(2 * math.pi * 55 * x) for x in t]
+    pitch = [p * v for p, v in zip(glide(700, 2100, n), vibrato)]
+    raw = [0.6 * a + 0.4 * b for a, b in zip(oscillate(pitch, saw), oscillate(pitch, triangle))]
+    nasal = biquad(raw, 'bp', [1800] * n, 1.5)
+    tone = [s + 0.5 * b for s, b in zip(raw, nasal)]
+    centre = glide(1500, 3500, n)
+    hiss = biquad(noise(random.Random(11), n), 'bp', centre, 2)
+    env = [
+        min(1.0, x / 0.01)
+        * (0.6 + 0.4 * min(1.0, x / 0.22))
+        * (math.exp(-(x - 0.22) * 30) if x > 0.22 else 1.0)
+        for x in t
+    ]
+    return [(s + 0.2 * h) * e for s, h, e in zip(tone, hiss, env)]
+
+
 SOUNDS = {
     'deathgrunt': death_grunt,
     'deathkamikaze': death_kamikaze,
     'deathtank': death_tank,
     'laughtank': laugh_tank,
+    'screechkamikaze': screech_kamikaze,
 }
 
 

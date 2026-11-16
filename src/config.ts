@@ -63,6 +63,7 @@ export const config = {
       damage: 1,
       maxWordLength: 4,
       deathSound: 'deathKamikaze',
+      spawnSound: 'screechKamikaze',
     },
     // The miniboss: minWords to maxWords words on every level, typed phraseWords at a time on
     // whole-phrase levels. It enters from the sides, the long way, so there is time for them.

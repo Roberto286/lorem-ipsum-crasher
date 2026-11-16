@@ -9,6 +9,7 @@ import killUrl from '../assets/audio/kill.wav';
 import laughTankUrl from '../assets/audio/laughtank.wav';
 import musicMp3Url from '../assets/audio/music.mp3';
 import musicOggUrl from '../assets/audio/music.ogg';
+import screechKamikazeUrl from '../assets/audio/screechkamikaze.wav';
 import backdropUrl from '../assets/backgrounds/arena.jpg';
 import fontUrl from '../assets/font/PressStart2P-Regular.ttf';
 import bigDemonUrl from '../assets/sprites/bigDemon.png';
@@ -35,6 +36,7 @@ export class BootScene extends Phaser.Scene {
     this.load.audio('deathKamikaze', deathKamikazeUrl);
     this.load.audio('deathTank', deathTankUrl);
     this.load.audio('laughTank', laughTankUrl);
+    this.load.audio('screechKamikaze', screechKamikazeUrl);
     this.load.audio('error', errorUrl);
     this.load.audio('hurt', hurtUrl);
     this.load.audio('gameOver', gameOverUrl);
