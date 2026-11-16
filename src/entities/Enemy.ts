@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { config } from '../config';
 import type { EnemyState } from '../utils/gameSession';
 import { t } from '../utils/i18n';
+import type { LabelBox } from '../utils/labelLayout';
 import { addText } from '../utils/ui';
 
 /** One text per line, the next one to type on top; past the visible cap, only a count. */
@@ -72,15 +73,20 @@ export class Enemy {
     this.typedLetters.setText(shown.slice(0, count) + blanked).setVisible(count > 0);
   }
 
-  /** The label is clamped inside the play band so the words are readable from the spawn edge. */
-  moveTo(x: number, y: number, playWidth: number, playTop: number, playBottom: number): void {
-    const halfWidth = this.label.width / 2;
-    const labelBottom = y - this.sprite.height / 2 - config.enemy.labelGap;
+  /** The label's natural box for a sprite at (x, y): centred over it, just above the sprite. */
+  labelBox(x: number, y: number): LabelBox {
+    return {
+      x,
+      bottom: y - this.sprite.height / 2 - config.enemy.labelGap,
+      width: this.label.width,
+      height: this.label.height,
+    };
+  }
+
+  /** Puts the sprite at (x, y) and the label on the box that layoutLabels gave it. */
+  moveTo(x: number, y: number, label: LabelBox): void {
     this.sprite.setPosition(x, y);
-    this.label.setPosition(
-      Phaser.Math.Clamp(x, halfWidth, playWidth - halfWidth),
-      Phaser.Math.Clamp(labelBottom, playTop + this.label.height, playBottom),
-    );
+    this.label.setPosition(label.x, label.bottom);
     this.typedLetters.setPosition(this.label.x, this.label.y);
     // The label shrinks as its words go, so the frame is fitted to it every time.
     this.frame

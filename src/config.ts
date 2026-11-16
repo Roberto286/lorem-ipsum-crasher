@@ -41,6 +41,8 @@ export const config = {
   enemy: {
     vanishMs: 250,
     labelGap: 2,
+    // Room kept between laid-out enemy labels and around the hero: 0 lets them touch.
+    labelSpacing: 1,
     typoSpeedBoost: 1.3,
     spawnBehindPanels: 12,
     sideEntryShare: 0.8,

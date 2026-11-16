@@ -6,6 +6,7 @@ import { hurlWord } from '../entities/wordProjectile';
 import { GameSession, type Cast } from '../utils/gameSession';
 import { t } from '../utils/i18n';
 import { listenForKeys } from '../utils/keyboard';
+import { layoutLabels } from '../utils/labelLayout';
 import { saveScore } from '../utils/scoreStorage';
 import { addButton, addText } from '../utils/ui';
 
@@ -213,22 +214,39 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drawEnemies(): void {
-    const { x, y } = this.player;
+    const { x: heroX, y: heroY } = this.player;
     const { target, matches, typed } = this.session;
     if (target) this.player.face(target.angle);
-    for (const state of this.session.enemies) {
-      const enemy = this.enemies.get(state.id);
-      if (!enemy) continue;
-      enemy.moveTo(
-        x + Math.cos(state.angle) * state.distance,
-        y + Math.sin(state.angle) * state.distance,
-        this.scale.width,
-        this.playTop,
-        this.playTop + this.playHeight,
-      );
+    // Closest first: the most urgent label keeps its natural spot, the others move around it.
+    const demons = this.session.enemies
+      .flatMap((state) => {
+        const enemy = this.enemies.get(state.id);
+        return enemy ? [{ state, enemy }] : [];
+      })
+      .sort((a, b) => a.state.distance - b.state.distance)
+      .map(({ state, enemy }) => ({
+        state,
+        enemy,
+        x: heroX + Math.cos(state.angle) * state.distance,
+        y: heroY + Math.sin(state.angle) * state.distance,
+      }));
+    const hero = this.player.getBounds();
+    const boxes = layoutLabels(
+      demons.map(({ enemy, x, y }) => enemy.labelBox(x, y)),
+      [{ left: hero.left, right: hero.right, top: hero.top, bottom: hero.bottom }],
+      {
+        left: 0,
+        right: this.scale.width,
+        top: this.playTop,
+        bottom: this.playTop + this.playHeight,
+      },
+      config.enemy.labelSpacing,
+    );
+    demons.forEach(({ state, enemy, x, y }, i) => {
+      enemy.moveTo(x, y, boxes[i]);
       enemy.highlight(matches.includes(state) ? typed.length : 0);
       enemy.setFrozen(this.session.frozen);
-    }
+    });
   }
 
   private drawHud(): void {

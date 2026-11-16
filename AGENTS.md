@@ -43,7 +43,7 @@ session.isOver → endRun → saveScore → scene.start('MenuScene', run)
 
 Scene order (`src/main.ts`): `BootScene` (asset loading, animations, desktop check, starts the music loop) → `IntroScene` (cutscene pages; each page has a camera `move`, a second camera keeps caption and hint fixed) → `MenuScene` (level and class picker, high scores, also the game-over screen via `create(lastRun)`) → `GameScene`.
 
-`GameScene` layout: opaque HUD strip on top (`config.hud`), play band in the middle, opaque typed-box panel at the bottom. Enemy labels are clamped to the play band. Every enemy whose top word starts with the typed buffer gets that prefix highlighted (`GameSession` exposes the matches; `target` is the closest one).
+`GameScene` layout: opaque HUD strip on top (`config.hud`), play band in the middle, opaque typed-box panel at the bottom. Enemy labels are laid out by `layoutLabels` (`src/utils/labelLayout.ts`): closest demon first, kept inside the play band and clear of each other and of the hero. Every enemy whose top word starts with the typed buffer gets that prefix highlighted (`GameSession` exposes the matches; `target` is the closest one).
 
 Pause: Escape, the button, or window blur/hidden (`Phaser.Core.Events.BLUR` / `HIDDEN`) pause the run. Resuming runs a countdown (`config.pause.resumeCountdownSeconds`) on the scene clock, because tweens stay paused until it ends.
 
@@ -55,7 +55,7 @@ Cross-scene state lives in the Phaser `registry`: `level` and `heroClass` (both 
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/scenes/`   | Phaser scenes: rendering, input wiring, scene transitions                                                                                               |
 | `src/entities/` | Game objects: `Enemy` (sprite + label wrapper), `Player` (extends `Phaser.GameObjects.Sprite`), `hurlWord`                                              |
-| `src/utils/`    | Phaser-free logic (`gameSession`, `difficulty`, `words`, `scoreStorage`, `i18n`) plus scene helpers (`keyboard`, `ui`)                                  |
+| `src/utils/`    | Phaser-free logic (`gameSession`, `difficulty`, `words`, `labelLayout`, `scoreStorage`, `i18n`) plus scene helpers (`keyboard`, `ui`)                   |
 | `src/assets/`   | `audio/` (effects `.wav`, `music.ogg` + `.mp3`), `backgrounds/`, `font/`, `sprites/*.png` (frame strips); `CREDITS.txt`                                 |
 | `scripts/`      | `generate_music.py`: regenerates the music loop (Python stdlib + `ffmpeg`); `generate_sfx.py`: regenerates the enemy sounds in `audio/` (Python stdlib) |
 | `tests/`        | Vitest unit tests, flat, one file per `src/utils` module                                                                                                |
