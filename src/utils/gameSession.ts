@@ -41,8 +41,16 @@ export type Cast =
   | { spell: 'pushback' }
   | { spell: 'descope'; changed: EnemyState[] }
   // enemy, word, killed: the demon whose next word was completed, its text, and whether that was
-  // its last. carried: the spell its clean kill cast, if any. Bare when no demon was on screen.
-  | { spell: 'tab'; enemy: EnemyState; word: string; killed: boolean; carried?: Cast }
+  // its last. carried: the spell its clean kill cast, if any. burned: the closest demon the dba passive
+  // cut a letter off, if any. Bare when no demon was on screen.
+  | {
+      spell: 'tab';
+      enemy: EnemyState;
+      word: string;
+      killed: boolean;
+      carried?: Cast;
+      burned?: EnemyState;
+    }
   | { spell: 'tab' }
   | { spell: 'snippet' };
 
@@ -55,7 +63,7 @@ export type TypeResult =
   // A word was completed but the enemy has more.
   | { kind: 'word'; enemy: EnemyState; word: string }
   // It was the last one. cast: the spell of a carrier, already applied.
-  | { kind: 'kill'; enemy: EnemyState; word: string; cast?: Cast }
+  | { kind: 'kill'; enemy: EnemyState; word: string; cast?: Cast; burned?: EnemyState }
   // A ready ability's command was typed: its spell is cast and nothing else changes.
   | { kind: 'ability'; ability: 'skill' | 'ultimate'; cast: Cast };
 
@@ -84,8 +92,15 @@ interface RoleAbilities {
   /**
    * graceSeconds: a demon reaching the hero waits that long before it costs a life. slowFactor and
    * slowSeconds: a word typed on a demon slows it to that speed multiplier for that long.
+   * burnLetters: each kill cuts that many letters off the closest surviving demon's next word.
    */
-  passive?: { tint: number; graceSeconds?: number; slowFactor?: number; slowSeconds?: number };
+  passive?: {
+    tint?: number;
+    graceSeconds?: number;
+    slowFactor?: number;
+    slowSeconds?: number;
+    burnLetters?: number;
+  };
 }
 
 const abilitiesOf = (heroClass: ClassKey): RoleAbilities => config.classes[heroClass];
@@ -295,8 +310,17 @@ export class GameSession {
       return { kind: 'word', enemy, word };
     }
     this.enemies = this.enemies.filter((other) => other !== enemy);
+    const burned = this.burnClosest();
     const cast = enemy.spell && clean ? this.cast(enemy.spell) : undefined;
-    return { kind: 'kill', enemy, word, cast };
+    return { kind: 'kill', enemy, word, cast, burned };
+  }
+
+  /** The dba passive: cuts the closest surviving demon's next word, if the role has a burn. */
+  private burnClosest(): EnemyState | undefined {
+    const letters = abilitiesOf(this.heroClass).passive?.burnLetters;
+    if (letters === undefined) return undefined;
+    const [closest] = [...this.enemies].sort((a, b) => a.distance - b.distance);
+    return closest && this.cutNextWord(closest, letters) ? closest : undefined;
   }
 
   /**
@@ -312,7 +336,14 @@ export class GameSession {
     const word = this.nextText(closest);
     const result = this.completeWord(closest, word);
     if (result.kind === 'kill') {
-      return { spell: 'tab', enemy: closest, word, killed: true, carried: result.cast };
+      return {
+        spell: 'tab',
+        enemy: closest,
+        word,
+        killed: true,
+        carried: result.cast,
+        burned: result.burned,
+      };
     }
     return { spell: 'tab', enemy: closest, word, killed: false };
   }
@@ -401,7 +432,7 @@ export class GameSession {
     const changed: EnemyState[] = [];
     const closest = [...this.enemies].sort((a, b) => a.distance - b.distance);
     for (const enemy of closest) {
-      if (this.cutNextWord(enemy)) changed.push(enemy);
+      if (this.cutNextWord(enemy, config.spells.truncate.letters)) changed.push(enemy);
     }
     return { spell: 'truncate', changed };
   }
@@ -412,12 +443,12 @@ export class GameSession {
    * match. Takes the longest cut that shares no prefix with another demon's next word, or none
    * if no cut does. Returns whether the text changed.
    */
-  private cutNextWord(enemy: EnemyState): boolean {
+  private cutNextWord(enemy: EnemyState, letters: number): boolean {
     const word = enemy.words[0];
     const others = this.enemies.filter((other) => other !== enemy).map((other) => other.words[0]);
     const matching = this.typed !== '' && word.startsWith(this.typed);
     const floor = matching ? this.typed.length + 1 : 1;
-    const start = Math.max(floor, word.length - config.spells.truncate.letters);
+    const start = Math.max(floor, word.length - letters);
     for (let keep = start; keep <= word.length; keep++) {
       const text = word.slice(0, keep).trimEnd();
       if (text.length < floor) continue;

@@ -1397,6 +1397,65 @@ describe('abilities', () => {
     expect(session.enemies[0].words).toEqual(['u']);
   });
 
+  it('burns the last letter off the closest surviving demon on each kill', () => {
+    const session = dba();
+    const near = enemy('dolore', { id: 101, distance: 50 });
+    const far = enemy('sit', { id: 102, distance: 200 });
+    session.enemies = [enemy('ut', { distance: 10 }), near, far];
+
+    const kill = type(session, 'ut')[1];
+
+    expect(kill).toMatchObject({ kind: 'kill', burned: near });
+    expect(near.words).toEqual(['dolor']);
+    expect(far.words).toEqual(['sit']);
+  });
+
+  it('burns nothing when the closest surviving demon is down to one letter', () => {
+    const session = dba();
+    const near = enemy('u', { id: 101, distance: 50 });
+    session.enemies = [enemy('sit', { distance: 10 }), near];
+
+    const kill = type(session, 'sit')[2];
+
+    expect(kill).toMatchObject({ kind: 'kill', burned: undefined });
+    expect(near.words).toEqual(['u']);
+  });
+
+  it("keeps the burned word from matching another demon's next word", () => {
+    const session = dba();
+    const near = enemy('dolore', { id: 101, distance: 50 });
+    session.enemies = [
+      enemy('sit', { distance: 10 }),
+      near,
+      enemy('dolor', { id: 102, distance: 200 }),
+    ];
+
+    type(session, 'sit');
+
+    expect(near.words).toEqual(['dolore']);
+  });
+
+  it('does not burn when the role has no burn passive', () => {
+    const session = newSession(() => 0, 'normal', 'devops');
+    const near = enemy('dolore', { id: 101, distance: 50 });
+    session.enemies = [enemy('sit', { distance: 10 }), near];
+
+    const kill = type(session, 'sit')[2];
+
+    expect(kill).toMatchObject({ kind: 'kill', burned: undefined });
+    expect(near.words).toEqual(['dolore']);
+  });
+
+  it('does not burn on a drop', () => {
+    const session = dba();
+    session.enemies = [enemy('dolore', { distance: 50 })];
+
+    const cast = session.cast('drop');
+
+    expect(cast).not.toHaveProperty('burned');
+    expect(session.enemies).toEqual([]);
+  });
+
   it('keeps the word being typed longer than the buffer', () => {
     const session = dba();
     session.enemies = [enemy('dolore')];

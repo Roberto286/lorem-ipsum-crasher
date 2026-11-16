@@ -178,6 +178,7 @@ export class GameScene extends Phaser.Scene {
     const result = this.session.typeLetter(letter);
     if (result.kind === 'kill' || result.kind === 'word') {
       if (result.kind === 'kill' && result.cast) this.showCast(result.cast);
+      if (result.kind === 'kill' && result.burned) this.enemies.get(result.burned.id)?.setWords();
       this.hurlWordAt(result.kind === 'kill', result.enemy, result.word);
     } else if (result.kind === 'typo') {
       this.sound.play('error');
@@ -193,6 +194,7 @@ export class GameScene extends Phaser.Scene {
       // The completed word hurls and lands with its sound, so a tab plays no ability sound.
       if (cast.spell === 'tab' && 'enemy' in cast) {
         if (cast.carried) this.showCast(cast.carried);
+        if (cast.burned) this.enemies.get(cast.burned.id)?.setWords();
         this.hurlWordAt(cast.killed, cast.enemy, cast.word);
       } else {
         this.showCast(cast);

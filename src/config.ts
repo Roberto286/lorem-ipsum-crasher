@@ -198,6 +198,7 @@ export const config = {
   // a prefix with any lorem word. A role may have a passive: graceSeconds (a demon reaching the hero
   // stops there and costs no life that long, still typeable), tint (sprite tint while graced or slowed),
   // slowFactor (speed multiplier on a demon the hero has typed a word of, for slowSeconds; a new word refreshes it).
+  // burnLetters (letters cut off the closest surviving demon's next word on each kill).
   classes: {
     junior: {
       tint: 0xffffff,
@@ -218,6 +219,8 @@ export const config = {
       skill: { command: 'truncate', spell: 'truncate', cooldownSeconds: 10 },
       // Charges slower than the devops freeze: drop clears every demon, not just stops them.
       ultimate: { command: 'drop', spell: 'drop', chargeWords: 30, chargeSeconds: 8 },
+      // Burn: each kill cuts the last letter off the closest surviving demon's next word.
+      passive: { burnLetters: 1 },
     },
     cto: {
       tint: 0xb98cff,
