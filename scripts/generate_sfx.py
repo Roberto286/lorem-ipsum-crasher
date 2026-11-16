@@ -160,10 +160,45 @@ def death_tank():
     return out
 
 
+def laugh_tank():
+    """1.8 s demonic laugh: five falling "ha" bursts (voiced saw through vowel band-passes),
+    then three dark echoes that carry the laugh out."""
+    total = samples(1.8)
+    out = [0.0] * total
+    rng = random.Random(7)
+    for k, start in enumerate((0.00, 0.30, 0.58, 0.84, 1.08)):
+        n = samples(0.20)
+        t = [i / RATE for i in range(n)]
+        top = 105 * 0.93**k
+        pitch = glide(top, top * 0.85, n)
+        detuned = [p * 1.015 for p in pitch]
+        voice = [a + 0.6 * b for a, b in zip(oscillate(pitch, saw), oscillate(detuned, saw))]
+        f1 = biquad(voice, 'bp', [700] * n, 4)
+        f2 = biquad(voice, 'bp', [1100] * n, 5)
+        body = biquad(voice, 'lp', [300] * n, 0.7)
+        rough = [0.7 + 0.3 * math.sin(2 * math.pi * 28 * x) for x in t]
+        env = [min(1.0, x / 0.015) * math.exp(-9 * x) for x in t]
+        level = 0.85**k
+        burst = [
+            level * (a + 0.7 * b + 0.25 * c) * e * r
+            for a, b, c, e, r in zip(f1, f2, body, env, rough)
+        ]
+        breath_n = samples(0.025)
+        breath = biquad(noise(rng, breath_n), 'bp', [1500] * breath_n, 1)
+        overlay(out, [0.15 * s for s in breath], samples(start))
+        overlay(out, burst, samples(start))
+    wet = biquad(out, 'lp', [900] * total, 0.7)
+    for delay, gain in ((0.11, 0.35), (0.19, 0.22), (0.31, 0.12)):
+        at = samples(delay)
+        overlay(out, [gain * s for s in wet[: total - at]], at)
+    return out
+
+
 SOUNDS = {
     'deathgrunt': death_grunt,
     'deathkamikaze': death_kamikaze,
     'deathtank': death_tank,
+    'laughtank': laugh_tank,
 }
 
 

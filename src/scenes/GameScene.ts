@@ -67,7 +67,11 @@ export class GameScene extends Phaser.Scene {
     if (this.paused) return;
 
     const { spawned, reached } = this.session.update(delta);
-    for (const state of spawned) this.enemies.set(state.id, new Enemy(this, state));
+    for (const state of spawned) {
+      this.enemies.set(state.id, new Enemy(this, state));
+      const enemyType = config.enemyTypes[state.type];
+      if ('spawnSound' in enemyType) this.sound.play(enemyType.spawnSound);
+    }
     for (const state of reached) this.removeEnemy(state.id)?.destroy();
     if (reached.length > 0) this.showPlayerHit();
 
