@@ -30,7 +30,8 @@ export type Cast =
   // changed: the demons whose next word a cut shortened, closest first.
   | { spell: 'truncate'; changed: EnemyState[] }
   // killed: every demon the drop removed, with its texts.
-  | { spell: 'drop'; killed: EnemyState[] };
+  | { spell: 'drop'; killed: EnemyState[] }
+  | { spell: 'pushback' };
 
 export type TypeResult =
   | { kind: 'progress' }
@@ -281,6 +282,8 @@ export class GameSession {
         return this.truncate();
       case 'drop':
         return this.drop();
+      case 'pushback':
+        return this.pushback();
     }
   }
 
@@ -332,6 +335,15 @@ export class GameSession {
     }
     this.typed = '';
     return { spell: 'drop', killed };
+  }
+
+  /** Pushes every demon back by pushback.pixels, never past the edge it came in from. */
+  private pushback(): Cast {
+    for (const enemy of this.enemies) {
+      const edge = this.edgeDistance(enemy.angle);
+      enemy.distance = Math.min(edge, enemy.distance + config.spells.pushback.pixels);
+    }
+    return { spell: 'pushback' };
   }
 
   private heal(lives: number): Cast {
@@ -499,6 +511,14 @@ export class GameSession {
     return Math.atan2(y, side * this.halfWidth);
   }
 
+  /** Distance from the center to the arena edge along this angle. */
+  private edgeDistance(angle: number): number {
+    return Math.min(
+      this.halfWidth / Math.abs(Math.cos(angle)),
+      this.halfHeight / Math.abs(Math.sin(angle)),
+    );
+  }
+
   /** spellChance: the last roll of a spawn decides whether it carries a spell, and which. */
   private spawn(
     type: EnemyType,
@@ -514,11 +534,7 @@ export class GameSession {
       type,
       words,
       angle,
-      // Distance from the center to the arena edge along this angle.
-      distance: Math.min(
-        this.halfWidth / Math.abs(Math.cos(angle)),
-        this.halfHeight / Math.abs(Math.sin(angle)),
-      ),
+      distance: this.edgeDistance(angle),
       speed: Math.min(maxSpeed, baseSpeed * speedScale),
       // One roll for both: under the chance it is spread evenly, so it also picks the spell.
       spell: roll < spellChance ? spellAt(roll / spellChance) : undefined,

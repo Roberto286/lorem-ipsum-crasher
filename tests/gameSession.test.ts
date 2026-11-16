@@ -1244,4 +1244,41 @@ describe('abilities', () => {
 
     expect(session.typed).toBe('');
   });
+
+  const cto = () => newSession(() => 0, 'normal', 'cto');
+
+  it('pushes every demon back by the configured distance', () => {
+    const session = cto();
+    session.enemies = [
+      enemy('sit', { distance: 50 }),
+      enemy('amet', { id: 101, words: ['amet'], distance: 60 }),
+    ];
+
+    session.cast('pushback');
+
+    const { pixels } = config.spells.pushback;
+    expect(session.enemies.map((state) => state.distance)).toEqual([50 + pixels, 60 + pixels]);
+  });
+
+  it('never pushes a demon past the edge it came from', () => {
+    const session = cto();
+    session.enemies = [
+      enemy('sit', { distance: halfWidth }),
+      enemy('amet', { id: 101, words: ['amet'], distance: halfWidth - 10 }),
+    ];
+
+    session.cast('pushback');
+
+    expect(session.enemies.map((state) => state.distance)).toEqual([halfWidth, halfWidth]);
+  });
+
+  it('puts pushback on cooldown', () => {
+    const session = cto();
+    const { skill } = config.classes.cto;
+
+    type(session, skill.command);
+
+    expect(session.skillReady).toBe(false);
+    expect(type(session, skill.command)[0].kind).toBe('typo');
+  });
 });

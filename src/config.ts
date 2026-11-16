@@ -135,6 +135,9 @@ export const config = {
     // shakeMs: how long the screen shakes when the dba ultimate drops every demon. Not carried:
     // only the dba ultimate casts it.
     drop: { shakeMs: 250 },
+    // pixels: distance the cto skill pushes every demon back by, never past the edge it came in
+    // from. Not carried: only the cto skill casts it.
+    pushback: { pixels: 40 },
   },
   // Picked in the menu. Harder: enemies spawn closer together and carry more words each.
   // wholePhrase: the words form one phrase that must be typed in a single go, spaces included.
@@ -190,7 +193,10 @@ export const config = {
       // Charges slower than the devops freeze: drop clears every demon, not just stops them.
       ultimate: { command: 'drop', spell: 'drop', chargeWords: 30 },
     },
-    cto: { tint: 0xb98cff },
+    cto: {
+      tint: 0xb98cff,
+      skill: { command: 'pushback', spell: 'pushback', cooldownSeconds: 8 },
+    },
   },
   defaultClass: 'junior',
   // v2: combo scoring changed what a score is worth, so the v1 boards are no longer comparable.
