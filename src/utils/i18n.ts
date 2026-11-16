@@ -31,6 +31,7 @@ const en = {
   paused: 'PAUSED',
   soundOn: 'SOUND ON',
   soundOff: 'SOUND OFF',
+  moreWords: '+{count}',
 };
 
 export type StringKey = keyof typeof en;

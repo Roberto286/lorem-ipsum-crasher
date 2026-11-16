@@ -8,7 +8,7 @@ export interface EnemyState {
   type: EnemyType;
   /**
    * Remaining texts, typed in order: the enemy dies with the last one.
-   * One word each, or a single space-separated phrase on whole-phrase levels.
+   * One word each, or space-separated phrases on whole-phrase levels.
    */
   words: string[];
   angle: number;
@@ -44,6 +44,7 @@ export class GameSession {
   lives: number = config.player.lives;
   elapsedMs = 0;
   private untilSpawnMs = 0;
+  private untilTankMs: number = config.difficulty.tankSpawnSeconds.first * 1000;
   private nextId = 0;
 
   constructor(
@@ -70,7 +71,7 @@ export class GameSession {
   update(deltaMs: number): UpdateResult {
     this.elapsedMs += deltaMs;
     const reached = this.advanceEnemies(deltaMs);
-    const spawned = this.spawnIfDue(deltaMs);
+    const spawned = [...this.spawnIfDue(deltaMs), ...this.spawnTankIfDue(deltaMs)];
     return { spawned, reached };
   }
 
@@ -174,8 +175,32 @@ export class GameSession {
     const angle = this.rng() * Math.PI * 2;
     const wordCount = 1 + Math.floor(this.rng() * difficulty.maxWords);
     const words = this.pickWords(wordCount, difficulty.maxWordLength);
-    const texts = config.levels[this.level].wholePhrase ? [words.join(' ')] : words;
-    return [this.spawn('grunt', angle, texts, difficulty.enemySpeed)];
+    return [this.spawn('grunt', angle, this.phrases(words, wordCount), difficulty.enemySpeed)];
+  }
+
+  /** The miniboss comes on its own clock, whatever the spawn interval and the rng say. */
+  private spawnTankIfDue(deltaMs: number): EnemyState[] {
+    this.untilTankMs -= deltaMs;
+    if (this.untilTankMs > 0) return [];
+
+    const { minWords, maxWords, phraseWords, maxWordLength } = config.enemyTypes.tank;
+    const difficulty = difficultyAt(this.elapsedMs / 1000, this.level);
+    this.untilTankMs += config.difficulty.tankSpawnSeconds.every * 1000;
+    const wordCount = minWords + Math.floor(this.rng() * (maxWords - minWords + 1));
+    const words = this.pickWords(wordCount, Math.min(difficulty.maxWordLength, maxWordLength));
+    // Short phrases: all its words in one would be too long to type in a single go.
+    const texts = this.phrases(words, phraseWords);
+    return [this.spawn('tank', this.sideAngle(), texts, difficulty.enemySpeed)];
+  }
+
+  /** The texts to type: the words as they are, or joined `size` at a time on phrase levels. */
+  private phrases(words: string[], size: number): string[] {
+    if (!config.levels[this.level].wholePhrase) return words;
+    const phrases: string[] = [];
+    for (let start = 0; start < words.length; start += size) {
+      phrases.push(words.slice(start, start + size).join(' '));
+    }
+    return phrases;
   }
 
   /** Words clear of prefix collisions with everything on screen and with each other. */

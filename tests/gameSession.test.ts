@@ -25,6 +25,8 @@ const rollThen = (roll: number, rest: () => number) => {
   return () => (calls++ === 0 ? roll : rest());
 };
 const sharesPrefix = (a: string, b: string) => a.startsWith(b) || b.startsWith(a);
+const onScreen = ['dolore', 'incididunt', 'exercitation', 'ut', 'sit'];
+const levels = Object.keys(config.levels) as LevelKey[];
 
 describe('spawning', () => {
   it('spawns the first enemy on the side edge of the arena', () => {
@@ -79,7 +81,6 @@ describe('spawning', () => {
 describe('kamikazes', () => {
   const { kamikaze } = config.enemyTypes;
   const [, [kneeSeconds], [lateSeconds]] = config.difficulty.kamikazeChance;
-  const levels = Object.keys(config.levels) as LevelKey[];
   const spawnAt = (seconds: number, rng: () => number, level: LevelKey = 'normal') =>
     newSession(rng, level).update(seconds * 1000).spawned[0];
   /** A forced kamikaze per level and per rng value from 0 to 0.99. */
@@ -139,14 +140,138 @@ describe('kamikazes', () => {
   });
 
   it('never share a prefix with a word on screen', () => {
-    const onScreen = ['dolore', 'incididunt', 'exercitation', 'ut', 'sit'];
-
     for (let index = 0; index < 100; index++) {
       const session = newSession(rollThen(0, () => index / 100));
       session.enemies.push(enemy(onScreen[0], { words: [...onScreen] }));
       const [spawned] = session.update(lateSeconds * 1000).spawned;
 
       expect(onScreen.filter((word) => sharesPrefix(word, spawned.words[0]))).toEqual([]);
+    }
+  });
+});
+
+describe('tanks', () => {
+  const { tank } = config.enemyTypes;
+  const { first, every } = config.difficulty.tankSpawnSeconds;
+  /** The tanks of 100 sessions, one per rng value, that jump straight to a tank time. */
+  const tanksAt = (level: LevelKey, seconds: number = first) =>
+    Array.from({ length: 100 }, (_, index) =>
+      newSession(() => index / 100, level)
+        .update(seconds * 1000)
+        .spawned.filter((spawned) => spawned.type === 'tank'),
+    ).flat();
+
+  it('arrive at the configured time and pace, whatever the rng rolls', () => {
+    for (const roll of [0, 0.5, 0.99]) {
+      const session = newSession(() => roll);
+      const arrivals: number[] = [];
+      for (let second = 1; second <= first + 2 * every; second++) {
+        const { spawned } = session.update(1000);
+        if (spawned.some((enemy) => enemy.type === 'tank')) arrivals.push(second);
+      }
+
+      expect(arrivals).toEqual([first, first + every, first + 2 * every]);
+    }
+  });
+
+  it('carry many words on every level, easy included', () => {
+    for (const level of levels.filter((level) => !config.levels[level].wholePhrase)) {
+      const tanks = tanksAt(level);
+      const counts = tanks.map(({ words }) => words.length);
+
+      expect(tanks).toHaveLength(100);
+      expect(Math.min(...counts)).toBe(tank.minWords);
+      expect(Math.max(...counts)).toBe(tank.maxWords);
+      expect(tanks.flatMap(({ words }) => words).every((word) => /^[a-z]+$/.test(word))).toBe(true);
+    }
+  });
+
+  it('carry their words as several short phrases on hell', () => {
+    for (const { words } of tanksAt('hell')) {
+      const sizes = words.map((phrase) => phrase.split(' ').length);
+      const total = sizes.reduce((sum, size) => sum + size, 0);
+
+      expect(words.length).toBeGreaterThan(1);
+      expect(sizes.slice(0, -1).every((size) => size === tank.phraseWords)).toBe(true);
+      expect(sizes.at(-1)).toBeLessThanOrEqual(tank.phraseWords);
+      expect(total).toBeGreaterThanOrEqual(tank.minWords);
+      expect(total).toBeLessThanOrEqual(tank.maxWords);
+    }
+  });
+
+  it('keep every word within their length cap late in a run', () => {
+    const late = first + 10 * every;
+
+    expect(difficultyAt(late, 'normal').maxWordLength).toBeGreaterThan(tank.maxWordLength);
+    for (const level of ['normal', 'hell'] as const) {
+      const tanks = tanksAt(level, late);
+      // Hell carries phrases: the cap is on each of their words.
+      const lengths = tanks.flatMap(({ words }) => words.join(' ').split(' ')).map((w) => w.length);
+
+      expect(tanks).toHaveLength(100);
+      expect(Math.max(...lengths)).toBeLessThanOrEqual(tank.maxWordLength);
+    }
+  });
+
+  it('walk in from a side edge at their share of the curve speed', () => {
+    for (const { angle, distance, speed } of tanksAt('normal')) {
+      expect(Math.abs(Math.cos(angle)) * distance).toBeCloseTo(halfWidth);
+      expect(speed).toBeCloseTo(difficultyAt(first, 'normal').enemySpeed * tank.speedScale);
+    }
+  });
+
+  it('cost their own damage in lives when they reach the player', () => {
+    const session = newSession();
+    session.enemies.push(enemy('sit', { type: 'tank', distance: 0 }));
+
+    session.update(16);
+
+    expect(tank.damage).toBeGreaterThan(config.enemyTypes.grunt.damage);
+    expect(session.lives).toBe(config.player.lives - tank.damage);
+  });
+
+  it('cannot push the lives below zero', () => {
+    const session = newSession();
+    session.lives = 1;
+    session.enemies.push(enemy('sit', { type: 'tank', distance: 0 }));
+
+    session.update(16);
+
+    expect(session.lives).toBe(0);
+    expect(session.isOver).toBe(true);
+  });
+
+  it('count each of their words toward the combo, and break it when they land', () => {
+    const perLevel = config.combo.perfectWordsPerLevel;
+    const session = newSession();
+    const boss = enemy('sit', { type: 'tank', words: Array(perLevel + 2).fill('sit') });
+    session.enemies.push(boss);
+
+    for (let word = 0; word <= perLevel; word++) type(session, 'sit');
+    expect(session.multiplier).toBe(2);
+    expect(session.streak).toBe(1);
+
+    boss.distance = 0;
+    session.update(16);
+    expect(session.multiplier).toBe(1);
+    expect(session.streak).toBe(0);
+  });
+
+  it('never share a prefix with a word on screen or among their own', () => {
+    for (const level of ['normal', 'hell'] as const) {
+      for (let index = 0; index < 100; index++) {
+        const session = newSession(() => index / 100, level);
+        session.enemies.push(enemy(onScreen[0], { words: [...onScreen] }));
+        session.update(first * 1000);
+        const texts = session.enemies.flatMap(({ words }) => words);
+
+        expect(session.enemies.map((enemy) => enemy.type)).toContain('tank');
+        expect(
+          texts.filter((text, at) =>
+            texts.some((other, otherAt) => at !== otherAt && sharesPrefix(text, other)),
+          ),
+        ).toEqual([]);
+      }
     }
   });
 });

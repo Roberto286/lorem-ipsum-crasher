@@ -11,7 +11,8 @@ export const config = {
     accent: '#ffe14d',
     dim: '#6b5a7a',
     enraged: '#ff5a5a',
-    labelBackground: '#000000aa',
+    // Behind a demon's words, per enemy type: the tank's own color marks it as the miniboss.
+    labelBackground: { grunt: '#000000aa', kamikaze: '#000000aa', tank: '#5a1a6ecc' },
     panel: 0x0d0812,
     panelError: 0x8a1c1c,
     typedBoxBorder: 0xffe14d,
@@ -35,12 +36,15 @@ export const config = {
   // the hud strip and the typed box, so they take as long to arrive as before the strip existed.
   // sideEntryShare: demons that enter from the left or right start within this middle share of
   // the edge, so they are never hidden behind the hud strip or the typed box.
+  // maxVisibleWords: lines of words a label shows before a count of the hidden ones, so the
+  // stack of a tank stays small in the play band.
   enemy: {
     vanishMs: 250,
     labelGap: 2,
     typoSpeedBoost: 1.3,
     spawnBehindPanels: 12,
     sideEntryShare: 0.8,
+    maxVisibleWords: 3,
   },
   // One entry per demon type. sprite: sheet and animation key. speedScale: multiplier on the
   // difficulty.enemySpeed curve; maxSpeed: cap on the result, in pixels per second.
@@ -51,6 +55,20 @@ export const config = {
     // only: the top and bottom edges are so close that it would arrive in under a second.
     // maxSpeed leaves about 2.5 s to type that word from the nearest point of a side edge.
     kamikaze: { sprite: 'imp', speedScale: 2.5, maxSpeed: 90, damage: 1, maxWordLength: 4 },
+    // The miniboss: minWords to maxWords words on every level, typed phraseWords at a time on
+    // whole-phrase levels. It enters from the sides, the long way, so there is time for them.
+    // maxWordLength: cap on the difficulty.maxWordLength curve for its words, so that many of
+    // them can still be typed before it arrives late in a run.
+    tank: {
+      sprite: 'bigDemon',
+      speedScale: 0.5,
+      maxSpeed: 40,
+      damage: 2,
+      minWords: 5,
+      maxWords: 8,
+      phraseWords: 2,
+      maxWordLength: 6,
+    },
   },
   // The typed word flies from the hero to the demon before it takes effect.
   projectile: { flightMs: 220, spins: 1 },
@@ -135,6 +153,9 @@ export const config = {
     ],
     minSpawnIntervalMs: 400,
     maxKamikazeChance: 0.35,
+    // Tanks ignore the spawn interval and the dice: the first one comes after `first` seconds,
+    // then one every `every` seconds.
+    tankSpawnSeconds: { first: 60, every: 60 },
   },
 } as const;
 

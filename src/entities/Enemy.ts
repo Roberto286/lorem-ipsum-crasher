@@ -1,7 +1,16 @@
 import * as Phaser from 'phaser';
 import { config } from '../config';
 import type { EnemyState } from '../utils/gameSession';
+import { t } from '../utils/i18n';
 import { addText } from '../utils/ui';
+
+/** One text per line, the next one to type on top; past the visible cap, only a count. */
+function labelText(words: string[]): string {
+  const lines = words.slice(0, config.enemy.maxVisibleWords);
+  const hidden = words.length - lines.length;
+  if (hidden > 0) lines.push(t('moreWords', { count: hidden }));
+  return lines.join('\n');
+}
 
 export class Enemy {
   /** Public so a hurled word can home in on it. */
@@ -20,7 +29,7 @@ export class Enemy {
     this.sprite.setFlipX(Math.cos(state.angle) > 0);
     const padding = { x: 2, y: 2 };
     this.label = addText(scene, 0, 0, '', {
-      backgroundColor: config.colors.labelBackground,
+      backgroundColor: config.colors.labelBackground[state.type],
       padding,
     })
       .setOrigin(0.5, 1)
@@ -31,9 +40,9 @@ export class Enemy {
     this.setWords(state.words);
   }
 
-  /** Remaining texts, one per line: the top one is typed next. */
+  /** Shows the remaining texts: the top one is typed next. */
   setWords(words: string[]): void {
-    this.label.setText(words.join('\n'));
+    this.label.setText(labelText(words));
   }
 
   /** Lights up the first typed letters of the top word. */
@@ -41,7 +50,7 @@ export class Enemy {
     const shown = this.label.text;
     // The label lags the session while a hurled word is in flight: its top word is not the
     // one being typed any more.
-    const count = shown === this.state.words.join('\n') ? letters : 0;
+    const count = shown === labelText(this.state.words) ? letters : 0;
     // Same text and layout as the label, so the monospace glyphs land exactly on its own.
     const blanked = shown.slice(count).replace(/[^\n]/g, ' ');
     this.typedLetters.setText(shown.slice(0, count) + blanked).setVisible(count > 0);
