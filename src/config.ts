@@ -63,7 +63,8 @@ export const config = {
     hell: { spawnIntervalScale: 0.8, maxWordsPerEnemy: 3, wholePhrase: true, erasableTypos: false },
   },
   defaultLevel: 'normal',
-  scores: { storageKey: 'loremIpsumCrasher.scores', maxEntries: 5 },
+  // v2: combo scoring changed what a score is worth, so the v1 boards are no longer comparable.
+  scores: { storageKey: 'loremIpsumCrasher.scores.v2', maxEntries: 5 },
   difficulty: {
     // The second keyframe is the knee: every curve gets steeper after it.
     spawnIntervalMs: [
