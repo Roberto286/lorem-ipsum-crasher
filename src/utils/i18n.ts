@@ -21,6 +21,7 @@ const en = {
   hell: 'HELL',
   gameOver: 'GAME OVER',
   score: 'SCORE {value}',
+  combo: 'x{value}',
   lives: 'LIVES {value}',
   time: 'TIME {value}s',
   highScores: 'HIGH SCORES',

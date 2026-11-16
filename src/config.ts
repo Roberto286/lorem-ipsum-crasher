@@ -44,6 +44,10 @@ export const config = {
   // Words are picked with a length between (max - lengthSpread) and max.
   words: { lengthSpread: 5 },
   pointsPerLetter: 10,
+  // A word is perfect when typed with no wrong letter since the previous completed word.
+  // On erasable levels a wrong letter costs one level, once per word; on hell it breaks the combo
+  // to x1 at once. perfectWordsPerLevel: perfect words in a row per level; maxMultiplier: the cap.
+  combo: { perfectWordsPerLevel: 5, maxMultiplier: 5 },
   // maxLetters: cap on the typed buffer, typos included, so it never overflows the box.
   typedBox: { height: 24, errorFlashMs: 150, maxLetters: 40 },
   // Opaque strip on top of the screen: score, lives and time on the left, buttons on the right.

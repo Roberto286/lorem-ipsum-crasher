@@ -181,12 +181,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drawHud(): void {
-    const { score, lives, elapsedMs, typed, target } = this.session;
+    const { score, multiplier, lives, elapsedMs, typed, target } = this.session;
     // Red while the buffer holds a typo: nothing can be killed until it is erased.
     const typedColor = typed === '' || target ? config.colors.accent : config.colors.enraged;
     const status = [
       t('score', { value: score }),
       t('lives', { value: lives }),
+      t('combo', { value: multiplier }),
       t('time', { value: Math.floor(elapsedMs / 1000) }),
     ];
     this.hud.setText(status.join('  '));

@@ -10,7 +10,7 @@ There is no README, CI, changelog or release process. This file is the only proj
 
 The core rule: **game rules are render-free, scenes only draw and forward input.**
 
-- `src/utils/gameSession.ts` — `GameSession` owns all run state (enemies, typed buffer, score, lives, spawn timer) and has no Phaser dependency, so it runs headless in tests. Enemy positions are polar (`angle`, `distance`) relative to the player.
+- `src/utils/gameSession.ts` — `GameSession` owns all run state (enemies, typed buffer, score, score multiplier and streak, lives, spawn timer) and has no Phaser dependency, so it runs headless in tests. Enemy positions are polar (`angle`, `distance`) relative to the player.
 - `src/scenes/GameScene.ts` — renders `GameSession` state, converts polar positions to screen coordinates, plays sounds and tweens.
 
 Key press flow:

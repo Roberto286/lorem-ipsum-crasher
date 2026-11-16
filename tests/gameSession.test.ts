@@ -311,3 +311,113 @@ describe('hell level', () => {
     expect(session.typed).toBe('si');
   });
 });
+
+describe('combo', () => {
+  const perLevel = config.combo.perfectWordsPerLevel;
+  const typeWord = (session: GameSession, word: string) => {
+    session.enemies.push(enemy(word));
+    type(session, word);
+  };
+  // One enemy per word: each is typed in full before the next one spawns.
+  const perfectWords = (session: GameSession, count: number) => {
+    for (let i = 0; i < count; i++) typeWord(session, 'sit');
+  };
+
+  it('rises one multiplier level per run of perfect words', () => {
+    const session = newSession();
+
+    perfectWords(session, perLevel - 1);
+    expect(session.multiplier).toBe(1);
+
+    perfectWords(session, 1);
+    expect(session.multiplier).toBe(2);
+    expect(session.streak).toBe(0);
+  });
+
+  it('stops the multiplier at the maximum level', () => {
+    const session = newSession();
+
+    perfectWords(session, perLevel * (config.combo.maxMultiplier + 2));
+
+    expect(session.multiplier).toBe(config.combo.maxMultiplier);
+  });
+
+  it('scores a word with the multiplier in effect before it counts', () => {
+    const session = newSession();
+    perfectWords(session, perLevel - 1);
+
+    const beforeLevelUp = session.score;
+    typeWord(session, 'amet');
+    expect(session.score - beforeLevelUp).toBe('amet'.length * config.pointsPerLetter);
+    expect(session.multiplier).toBe(2);
+
+    const beforeNext = session.score;
+    typeWord(session, 'amet');
+    expect(session.score - beforeNext).toBe('amet'.length * config.pointsPerLetter * 2);
+  });
+
+  it('drops one level per word for wrong letters, even when several follow', () => {
+    const session = newSession();
+    perfectWords(session, perLevel * 2);
+    expect(session.multiplier).toBe(3);
+    session.enemies.push(enemy('sit'));
+
+    type(session, 'xy');
+    expect(session.multiplier).toBe(2);
+
+    session.eraseLetter();
+    session.eraseLetter();
+    expect(type(session, 'sit').at(-1)?.kind).toBe('kill');
+    expect(session.multiplier).toBe(2);
+
+    session.enemies.push(enemy('sit'));
+    type(session, 'x');
+    expect(session.multiplier).toBe(1);
+  });
+
+  it('does not count a word with an erased typo as perfect', () => {
+    const session = newSession();
+    perfectWords(session, perLevel - 1);
+    session.enemies.push(enemy('sit'));
+
+    type(session, 'x');
+    session.eraseLetter();
+
+    expect(type(session, 'sit').at(-1)?.kind).toBe('kill');
+    expect(session.streak).toBe(0);
+  });
+
+  it('resets a raised multiplier straight to x1 on a hell error', () => {
+    const session = newSession(() => 0, 'hell');
+    perfectWords(session, perLevel);
+    expect(session.multiplier).toBe(2);
+    session.enemies.push(enemy('sit'));
+
+    expect(type(session, 'x').at(-1)?.kind).toBe('error');
+    expect(session.multiplier).toBe(1);
+    expect(session.streak).toBe(0);
+  });
+
+  it('resets the multiplier and progress when a life is lost', () => {
+    const session = newSession();
+    perfectWords(session, perLevel + 1);
+    expect(session.multiplier).toBe(2);
+    expect(session.streak).toBe(1);
+    session.enemies.push(enemy('sit', { distance: config.player.hitRadius + 1, speed: 10 }));
+
+    session.update(1000);
+
+    expect(session.multiplier).toBe(1);
+    expect(session.streak).toBe(0);
+  });
+
+  it('counts every word of a multi-word enemy toward the streak', () => {
+    const session = newSession();
+    session.enemies.push(enemy('sit', { words: Array.from({ length: perLevel }, () => 'sit') }));
+
+    for (let i = 0; i < perLevel; i++) type(session, 'sit');
+
+    expect(session.enemies).toHaveLength(0);
+    expect(session.multiplier).toBe(2);
+  });
+});

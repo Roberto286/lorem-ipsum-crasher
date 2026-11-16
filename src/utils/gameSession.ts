@@ -34,6 +34,12 @@ export class GameSession {
   enemies: EnemyState[] = [];
   typed = '';
   score = 0;
+  /** Score multiplier, from 1 up to config.combo.maxMultiplier. */
+  multiplier = 1;
+  /** Perfect words toward the next multiplier level. */
+  streak = 0;
+  // A wrong letter was typed since the last completed word, so that word cannot be perfect.
+  private wordFlawed = false;
   lives: number = config.player.lives;
   elapsedMs = 0;
   private untilSpawnMs = 0;
@@ -81,7 +87,8 @@ export class GameSession {
     }
 
     completed.words.shift();
-    this.score += typed.length * config.pointsPerLetter;
+    this.score += typed.length * config.pointsPerLetter * this.multiplier;
+    this.countWord();
     this.typed = '';
     if (completed.words.length > 0) return { kind: 'word', enemy: completed, word: typed };
     this.enemies = this.enemies.filter((enemy) => enemy !== completed);
@@ -98,6 +105,7 @@ export class GameSession {
   }
 
   private mistype(typed: string): TypeResult {
+    this.recordWrongLetter();
     if (this.erasableTypos) {
       if (typed.length <= config.typedBox.maxLetters) this.typed = typed;
       return { kind: 'typo' };
@@ -106,6 +114,26 @@ export class GameSession {
     if (enemy) enemy.speed *= config.enemy.typoSpeedBoost;
     this.typed = '';
     return { kind: 'error', enemy };
+  }
+
+  /** Completes a word: a perfect one (no wrong letter since the last word) advances the streak. */
+  private countWord(): void {
+    if (!this.wordFlawed && this.multiplier < config.combo.maxMultiplier) {
+      this.streak += 1;
+      if (this.streak >= config.combo.perfectWordsPerLevel) {
+        this.multiplier += 1;
+        this.streak = 0;
+      }
+    }
+    this.wordFlawed = false;
+  }
+
+  /** A wrong letter: erasable levels drop one level once per word, hell breaks the combo to x1. */
+  private recordWrongLetter(): void {
+    if (!this.erasableTypos) this.multiplier = 1;
+    else if (!this.wordFlawed) this.multiplier = Math.max(1, this.multiplier - 1);
+    this.wordFlawed = true;
+    this.streak = 0;
   }
 
   private matching(prefix: string): EnemyState[] {
@@ -121,6 +149,9 @@ export class GameSession {
 
     this.enemies = this.enemies.filter((enemy) => !reached.includes(enemy));
     this.lives = Math.max(0, this.lives - reached.length);
+    // Losing a life starts the combo over.
+    this.multiplier = 1;
+    this.streak = 0;
     // The half-typed word may have just hit the player: do not leave its letters behind. A
     // buffer holding a typo matched nobody to begin with, so it stays for the player to fix.
     const wasTyped = reached.some((enemy) => enemy.words[0].startsWith(this.typed));
