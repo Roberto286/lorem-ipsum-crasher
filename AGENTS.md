@@ -16,6 +16,7 @@ The core rule: **game rules are render-free, scenes only draw and forward input.
   `firewall` is carried like `patch`. Casting it sets `GameSession.shield` to `config.spells.firewall.hits`; `advanceEnemies` lets the shield absorb whole demons that reach the hero, one per point, in `reached` order. An absorbed demon deals no damage and keeps the combo; a second firewall does not stack.
   `linter` is carried like `patch`. Casting it sets `GameSession.forgiven` to `config.spells.linter.typos`; `recordWrongLetter` spends one per wrong letter and returns early, so the combo, streak and the word's perfect flag stay as they were. Erasable and hell buffer rules still apply. A second linter does not stack.
   `cache` is carried like `patch`. Casting it sets `GameSession.cacheMs` to `config.spells.cache.seconds` times 1000 and `update()` counts it down, whether or not a freeze is on. While `cached`, a completed word's points are multiplied by `scoreScale`; combo and streak are untouched. A second cache restarts the timer.
+- HUD: active drops (`FW`, `LINT`, `CACHE`) render right-aligned in the typed box, not the top strip; `typedBox.maxLetters` is 31 so the centred buffer clears them.
 - `src/scenes/GameScene.ts` — renders `GameSession` state, converts polar positions to screen coordinates, plays sounds and tweens.
 
 Key press flow:

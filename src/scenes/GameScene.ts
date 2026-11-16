@@ -19,6 +19,7 @@ export class GameScene extends Phaser.Scene {
   private pausedText!: Phaser.GameObjects.Text;
   private typedBox!: Phaser.GameObjects.Rectangle;
   private typedText!: Phaser.GameObjects.Text;
+  private drops!: Phaser.GameObjects.Text;
   // The play area is the band between the HUD strip and the bottom panel.
   private playTop = 0;
   private playHeight = 0;
@@ -130,6 +131,10 @@ export class GameScene extends Phaser.Scene {
       .rectangle(width / 2, boxCenterY, width - 8, config.typedBox.height - 6, config.colors.panel)
       .setStrokeStyle(1, config.colors.typedBoxBorder);
     this.typedText = addText(this, width / 2, boxCenterY, '', { color: config.colors.accent });
+    // Right-aligned inside the box, 12 px in from its edge; the typed buffer stays centred.
+    this.drops = addText(this, width - 12, boxCenterY, '', {
+      color: config.colors.accent,
+    }).setOrigin(1, 0.5);
   }
 
   private handleLetter(letter: string): void {
@@ -224,13 +229,16 @@ export class GameScene extends Phaser.Scene {
     const status = [
       t('score', { value: score }),
       t('lives', { value: lives }),
-      ...(shield > 0 ? [t('shield')] : []),
-      ...(forgiven > 0 ? [t('linter')] : []),
-      ...(cached ? [t('cache')] : []),
       t('combo', { value: multiplier }),
       t('time', { value: Math.floor(elapsedMs / 1000) }),
     ];
     this.hud.setText(status.join('  '));
+    const drops = [
+      ...(shield > 0 ? [t('shield')] : []),
+      ...(forgiven > 0 ? [t('linter')] : []),
+      ...(cached ? [t('cache')] : []),
+    ];
+    this.drops.setText(drops.join(' '));
     this.typedText.setText(typed);
     if (this.typedText.style.color !== typedColor) this.typedText.setColor(typedColor);
   }
