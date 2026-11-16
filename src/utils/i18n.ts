@@ -11,7 +11,8 @@ const en = {
   intro3: 'The demons are awake. And they are done being placeholders.',
   intro4: 'One dev is still online. Type their names to banish them.',
   introHint: 'ENTER: NEXT   ESC: SKIP',
-  howToPlay: 'Type the demons away before they reach you.',
+  howToPlay:
+    'Type the demons away before they reach you.\n' + 'Type a role command when it lights up.',
   mobileUnsupported: 'This game needs a real keyboard.\n\nPlay it on a desktop computer.',
   start: 'PRESS ENTER TO START',
   difficulty: 'DIFFICULTY  < {level} >',
@@ -42,6 +43,8 @@ const en = {
   moreWords: '+{count}',
   ultimateCharge: '{percent}%',
   skillCooldown: '{seconds}s',
+  skillCommand: 'SKILL: {command}',
+  ultimateCommand: 'ULT: {command}',
 };
 
 export type StringKey = keyof typeof en;

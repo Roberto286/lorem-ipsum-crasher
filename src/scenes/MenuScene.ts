@@ -19,6 +19,7 @@ export class MenuScene extends Phaser.Scene {
   private levelButton!: Phaser.GameObjects.Text;
   private classButton!: Phaser.GameObjects.Text;
   private scoresText!: Phaser.GameObjects.Text;
+  private roleCommands!: Phaser.GameObjects.Text;
 
   constructor() {
     super('MenuScene');
@@ -36,7 +37,10 @@ export class MenuScene extends Phaser.Scene {
     addText(this, centerX, height * 0.27, this.introText(lastRun));
     this.levelButton = addButton(this, centerX, height * 0.42, '', () => this.shiftLevel(1));
     this.classButton = addButton(this, centerX, height * 0.5, '', () => this.shiftClass(1));
-    this.scoresText = addText(this, centerX, height * 0.57, '').setOrigin(0.5, 0);
+    this.roleCommands = addText(this, centerX, height * 0.5 + 14, '', {
+      color: config.colors.dim,
+    });
+    this.scoresText = addText(this, centerX, height * 0.6, '').setOrigin(0.5, 0);
     this.refresh();
     const prompt = addButton(this, centerX, height * 0.94, t('start'), start);
     prompt.setColor(config.colors.accent);
@@ -80,6 +84,16 @@ export class MenuScene extends Phaser.Scene {
     );
     this.levelButton.setText(t('difficulty', { level: t(level) }));
     this.classButton.setText(t('heroClass', { name: t(heroClass) }));
+    this.roleCommands.setText(this.commandsText(heroClass));
     this.scoresText.setText([t('highScores'), ...rows].join('\n'));
+  }
+
+  /** The typed commands of the role's skill and ultimate, read from config. */
+  private commandsText(heroClass: ClassKey): string {
+    const role = config.classes[heroClass];
+    const parts: string[] = [];
+    if ('skill' in role) parts.push(t('skillCommand', { command: role.skill.command }));
+    if ('ultimate' in role) parts.push(t('ultimateCommand', { command: role.ultimate.command }));
+    return parts.join('   ');
   }
 }

@@ -42,7 +42,7 @@ GameScene.update → session.update(delta) → { spawned, reached }
 session.isOver → endRun → saveScore → scene.start('MenuScene', run)
 ```
 
-Scene order (`src/main.ts`): `BootScene` (asset loading, animations, desktop check, starts the music loop) → `IntroScene` (cutscene pages; each page has a camera `move`, a second camera keeps caption and hint fixed) → `MenuScene` (level and class picker, high scores, also the game-over screen via `create(lastRun)`) → `GameScene`.
+Scene order (`src/main.ts`): `BootScene` (asset loading, animations, desktop check, starts the music loop) → `IntroScene` (cutscene pages; each page has a camera `move`, a second camera keeps caption and hint fixed) → `MenuScene` (level and class picker, the typed commands of the picked role read from `config.classes`, high scores, also the game-over screen via `create(lastRun)`) → `GameScene`.
 
 `GameScene` layout: opaque HUD strip on top (`config.hud`), play band in the middle, opaque typed-box panel at the bottom. Enemy labels are laid out by `layoutLabels` (`src/utils/labelLayout.ts`): closest demon first, kept inside the play band and clear of each other and of the hero. Every enemy whose top word starts with the typed buffer gets that prefix highlighted (`GameSession` exposes the matches; `target` is the closest one).
 
