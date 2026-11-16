@@ -29,6 +29,7 @@ export type Cast =
   | { spell: 'firewall' }
   | { spell: 'linter' }
   | { spell: 'cache' }
+  | { spell: 'coffee' }
   // changed: the demons whose next word a cut shortened, closest first.
   | { spell: 'truncate'; changed: EnemyState[] }
   // killed: every demon the drop removed, with its texts.
@@ -89,13 +90,11 @@ const carriedSpells = (Object.keys(config.spells) as SpellKey[]).filter(
   (spell): spell is CarriedSpell => 'weight' in config.spells[spell],
 );
 
-/** The spell at `roll` (0 to 1) along the configured weights. */
-function spellAt(roll: number): CarriedSpell {
-  const total = carriedSpells.reduce((sum, spell) => sum + config.spells[spell].weight, 0);
+/** The spell at `roll` (0 to 1) along the configured weights of `pool`. */
+function spellAt(roll: number, pool: CarriedSpell[]): CarriedSpell {
+  const total = pool.reduce((sum, spell) => sum + config.spells[spell].weight, 0);
   let left = roll * total;
-  return (
-    carriedSpells.find((spell) => (left -= config.spells[spell].weight) < 0) ?? carriedSpells[0]
-  );
+  return pool.find((spell) => (left -= config.spells[spell].weight) < 0) ?? pool[0];
 }
 
 /** Whole game state and rules, free of rendering so it runs in tests. */
@@ -342,6 +341,8 @@ export class GameSession {
         // A second cache restarts the timer instead of adding to it.
         this.cacheMs = config.spells.cache.seconds * 1000;
         return { spell: 'cache' };
+      case 'coffee':
+        return this.coffee();
       case 'throttle':
         // A second throttle restarts the timer instead of adding to it.
         this.throttleMs = config.spells.throttle.seconds * 1000;
@@ -361,6 +362,19 @@ export class GameSession {
         this.snippetMs = config.spells.snippet.seconds * 1000;
         return { spell: 'snippet' };
     }
+  }
+
+  /** Refills the skill and charges the ultimate, up to its chargeWords. */
+  private coffee(): Cast {
+    this.skillCooldownMs = 0;
+    const { ultimate } = abilitiesOf(this.heroClass);
+    if (ultimate) {
+      this.ultimateCharge = Math.min(
+        ultimate.chargeWords,
+        this.ultimateCharge + config.spells.coffee.chargeWords,
+      );
+    }
+    return { spell: 'coffee' };
   }
 
   /**
@@ -656,6 +670,12 @@ export class GameSession {
     );
   }
 
+  /** The spells this hero's demons can carry: coffee only refills abilities, so none without one. */
+  private get carriedPool(): CarriedSpell[] {
+    const { skill, ultimate } = abilitiesOf(this.heroClass);
+    return skill || ultimate ? carriedSpells : carriedSpells.filter((spell) => spell !== 'coffee');
+  }
+
   /** spellChance: the last roll of a spawn decides whether it carries a spell, and which. */
   private spawn(
     type: EnemyType,
@@ -674,7 +694,7 @@ export class GameSession {
       distance: this.edgeDistance(angle),
       speed: Math.min(maxSpeed, baseSpeed * speedScale),
       // One roll for both: under the chance it is spread evenly, so it also picks the spell.
-      spell: roll < spellChance ? spellAt(roll / spellChance) : undefined,
+      spell: roll < spellChance ? spellAt(roll / spellChance, this.carriedPool) : undefined,
     };
     this.enemies.push(enemy);
     return enemy;

@@ -699,6 +699,39 @@ describe('spells', () => {
     });
   });
 
+  it('refills the skill cooldown on a coffee', () => {
+    const session = newSession();
+    session.skillCooldownMs = 5000;
+
+    expect(session.cast('coffee')).toEqual({ spell: 'coffee' });
+    expect(session.skillCooldownMs).toBe(0);
+    expect(session.skillReady).toBe(true);
+  });
+
+  it('adds ultimate charge on a coffee, never past the ultimate chargeWords', () => {
+    const session = newSession();
+    const { chargeWords } = config.classes.junior.ultimate!;
+    session.ultimateCharge = chargeWords - 2;
+
+    session.cast('coffee');
+    expect(session.ultimateCharge).toBe(chargeWords);
+    expect(session.ultimateReady).toBe(true);
+  });
+
+  it('casts the coffee of a carrier killed by typing', () => {
+    const session = newSession();
+    session.skillCooldownMs = 5000;
+    session.enemies = [enemy('ab', { spell: 'coffee' })];
+
+    expect(type(session, 'ab').at(-1)).toEqual({
+      kind: 'kill',
+      enemy: expect.objectContaining({ id: 100 }),
+      word: 'ab',
+      cast: { spell: 'coffee' },
+    });
+    expect(session.skillReady).toBe(true);
+  });
+
   it('loses the spell of a carrier that reaches the hero', () => {
     const session = newSession();
     session.lives = config.player.lives - 1;

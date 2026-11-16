@@ -126,6 +126,8 @@ export const config = {
     // seconds: how long a cache scales the word score; scoreScale: the factor on a word's points.
     // A second cache restarts the timer instead of adding to it.
     cache: { weight: 1, color: 0x9a7a10, seconds: 8, scoreScale: 2 },
+    // Refills the skill's cooldown and adds chargeWords to the ultimate's charge, up to its chargeWords.
+    coffee: { weight: 1, color: 0x6f4e37, chargeWords: 5 },
     // seconds: how long no demon moves (the devops ultimate). tint: sprite colour of a frozen demon.
     freeze: { seconds: 5, tint: 0x9fd8ff },
     // seconds: how long every demon moves at speedScale times its speed. A second throttle
