@@ -21,7 +21,7 @@ export interface EnemyState {
 /** What a spell did, for the scene to show. */
 export type Cast =
   // healed: lives actually gained, 0 when they were full.
-  { spell: 'heal'; healed: number };
+  { spell: 'heal'; healed: number } | { spell: 'freeze' };
 
 export type TypeResult =
   | { kind: 'progress' }
@@ -58,6 +58,8 @@ export class GameSession {
   streak = 0;
   // A wrong letter was typed since the last completed word, so that word cannot be perfect.
   private wordFlawed = false;
+  // Milliseconds left of a freeze: while it lasts no demon moves.
+  private frozenMs = 0;
   lives: number = config.player.lives;
   elapsedMs = 0;
   private untilSpawnMs = 0;
@@ -115,6 +117,11 @@ export class GameSession {
     return { kind: 'kill', enemy: completed, word: typed, cast };
   }
 
+  /** No demon moves while a freeze lasts. */
+  get frozen(): boolean {
+    return this.frozenMs > 0;
+  }
+
   /**
    * Casts a spell at once, whoever asks: a carrier that was just killed, or the hero. Spells
    * score no combo points and leave the multiplier and the streak alone.
@@ -123,6 +130,10 @@ export class GameSession {
     switch (spell) {
       case 'heal':
         return this.heal(config.spells.heal.lives);
+      case 'freeze':
+        // A second freeze restarts the timer instead of adding to it.
+        this.frozenMs = config.spells.freeze.seconds * 1000;
+        return { spell: 'freeze' };
     }
   }
 
@@ -180,7 +191,9 @@ export class GameSession {
   }
 
   private advanceEnemies(deltaMs: number): EnemyState[] {
-    for (const enemy of this.enemies) enemy.distance -= (enemy.speed * deltaMs) / 1000;
+    const movingMs = Math.max(0, deltaMs - this.frozenMs);
+    this.frozenMs = Math.max(0, this.frozenMs - deltaMs);
+    for (const enemy of this.enemies) enemy.distance -= (enemy.speed * movingMs) / 1000;
     const reached = this.enemies.filter((enemy) => enemy.distance <= config.player.hitRadius);
     if (reached.length === 0) return reached;
 

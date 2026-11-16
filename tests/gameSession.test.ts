@@ -644,6 +644,7 @@ describe('spells', () => {
   // Late enough in a run that the spell chance is past zero.
   const lateMs = 180_000;
   const spellChance = difficultyAt(lateMs / 1000, 'normal').spellChance;
+  const freezeMs = config.spells.freeze.seconds * 1000;
 
   it('gives no demon a spell at the start of a run', () => {
     expect(newSession(() => 0.5).update(16).spawned[0].spell).toBeUndefined();
@@ -706,5 +707,83 @@ describe('spells', () => {
 
     expect(reached.map((e) => e.id)).toEqual([100]);
     expect(session.lives).toBe(config.player.lives - 1 - config.enemyTypes.grunt.damage);
+  });
+
+  it('stops every demon for the length of a freeze', () => {
+    const session = newSession();
+    const demons = [enemy('ab', { speed: 50 }), enemy('cd', { id: 101, speed: 50 })];
+    session.enemies = [...demons];
+
+    session.cast('freeze');
+    for (let i = 0; i < 10; i++) session.update(freezeMs / 10);
+
+    expect(demons.map((demon) => demon.distance)).toEqual([100, 100]);
+  });
+
+  it('lets the demons walk again at their speed when the freeze ends', () => {
+    const session = newSession();
+    const demon = enemy('ab', { speed: 50 });
+    session.enemies = [demon];
+    const start = demon.distance;
+
+    session.cast('freeze');
+    session.update(freezeMs);
+    session.update(1000);
+
+    expect(demon.distance).toBeCloseTo(start - demon.speed);
+  });
+
+  it('counts only the time past the end of a freeze in the frame that ends it', () => {
+    const session = newSession();
+    const demon = enemy('ab', { speed: 50 });
+    session.enemies = [demon];
+    const start = demon.distance;
+
+    session.cast('freeze');
+    session.update(freezeMs + 500);
+
+    expect(demon.distance).toBeCloseTo(start - demon.speed * 0.5);
+  });
+
+  it('holds a demon that spawns during a freeze', () => {
+    const session = newSession();
+    session.cast('freeze');
+    const [demon] = session.update(16).spawned;
+    const start = demon.distance;
+
+    session.update(freezeMs / 2);
+
+    expect(demon.distance).toBe(start);
+  });
+
+  it('restarts the timer on a second freeze instead of adding to it', () => {
+    const session = newSession();
+    const demon = enemy('ab', { speed: 50 });
+    session.enemies = [demon];
+    const start = demon.distance;
+
+    session.cast('freeze');
+    session.update(freezeMs / 2);
+    session.cast('freeze');
+    session.update(freezeMs);
+
+    expect(demon.distance).toBe(start);
+    expect(session.frozen).toBe(false);
+
+    session.update(1000);
+    expect(demon.distance).toBeCloseTo(start - demon.speed);
+  });
+
+  it('reports the freeze of a carrier killed by typing', () => {
+    const session = newSession();
+    session.enemies = [enemy('ab', { spell: 'freeze' })];
+
+    expect(type(session, 'ab').at(-1)).toEqual({
+      kind: 'kill',
+      enemy: expect.objectContaining({ id: 100 }),
+      word: 'ab',
+      cast: { spell: 'freeze' },
+    });
+    expect(session.frozen).toBe(true);
   });
 });

@@ -159,7 +159,7 @@ export class GameScene extends Phaser.Scene {
 
   /** Shows a spell that the session has already applied. */
   private showCast(cast: Cast): void {
-    if (cast.healed > 0) this.pulseHud();
+    if (cast.spell === 'heal' && cast.healed > 0) this.pulseHud();
   }
 
   private pulseHud(): void {
@@ -207,6 +207,7 @@ export class GameScene extends Phaser.Scene {
         this.playTop + this.playHeight,
       );
       enemy.highlight(matches.includes(state) ? typed.length : 0);
+      enemy.setFrozen(this.session.frozen);
     }
   }
 

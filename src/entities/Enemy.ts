@@ -20,6 +20,7 @@ export class Enemy {
   private readonly typedLetters: Phaser.GameObjects.Text;
   /** Around the label of a tank that carries a spell. */
   private readonly frame?: Phaser.GameObjects.Rectangle;
+  private frozen = false;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -90,6 +91,19 @@ export class Enemy {
   /** Marks an enemy that got faster after a typo on its word. */
   enrage(): void {
     this.label.setColor(config.colors.enraged);
+  }
+
+  /** Tints the sprite and stops its walk while the demon is frozen. */
+  setFrozen(frozen: boolean): void {
+    if (frozen === this.frozen) return;
+    this.frozen = frozen;
+    if (frozen) {
+      this.sprite.setTint(config.spells.freeze.tint);
+      this.sprite.anims.pause();
+    } else {
+      this.sprite.clearTint();
+      this.sprite.anims.resume();
+    }
   }
 
   vanish(): void {
