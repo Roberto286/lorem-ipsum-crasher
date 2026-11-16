@@ -41,6 +41,7 @@ const en = {
   soundOff: 'SOUND OFF',
   moreWords: '+{count}',
   ultimateCharge: '{percent}%',
+  skillCooldown: '{seconds}s',
 };
 
 export type StringKey = keyof typeof en;

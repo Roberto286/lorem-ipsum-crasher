@@ -120,8 +120,11 @@ export const config = {
     // seconds: how long a cache scales the word score; scoreScale: the factor on a word's points.
     // A second cache restarts the timer instead of adding to it.
     cache: { weight: 1, color: 0x9a7a10, seconds: 8, scoreScale: 2 },
-    // seconds: how long no demon moves. tint: sprite colour of a frozen demon.
-    freeze: { seconds: 2, tint: 0x9fd8ff },
+    // seconds: how long no demon moves (the devops ultimate). tint: sprite colour of a frozen demon.
+    freeze: { seconds: 5, tint: 0x9fd8ff },
+    // seconds: how long every demon moves at speedScale times its speed. A second throttle
+    // restarts the timer. Not carried: only the devops skill casts it.
+    throttle: { seconds: 4, speedScale: 0.5 },
   },
   // Picked in the menu. Harder: enemies spawn closer together and carry more words each.
   // wholePhrase: the words form one phrase that must be typed in a single go, spaces included.
@@ -168,6 +171,7 @@ export const config = {
     junior: { tint: 0xffffff },
     devops: {
       tint: 0x9fd8ff,
+      skill: { command: 'throttle', spell: 'throttle', cooldownSeconds: 12 },
       ultimate: { command: 'freeze', spell: 'freeze', chargeWords: 20 },
     },
     dba: { tint: 0xff9a3c },

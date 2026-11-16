@@ -22,6 +22,7 @@ export class Enemy {
   /** Around the label of a tank that carries a spell. */
   private readonly frame?: Phaser.GameObjects.Rectangle;
   private frozen = false;
+  private throttled = false;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -110,6 +111,13 @@ export class Enemy {
       this.sprite.clearTint();
       this.sprite.anims.resume();
     }
+  }
+
+  /** Slows the walk of the sprite while a throttle lasts. */
+  setThrottled(throttled: boolean): void {
+    if (throttled === this.throttled) return;
+    this.throttled = throttled;
+    this.sprite.anims.timeScale = throttled ? config.spells.throttle.speedScale : 1;
   }
 
   vanish(): void {

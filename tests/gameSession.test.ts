@@ -1083,4 +1083,49 @@ describe('abilities', () => {
       for (const word of loremWords) expect(sharesPrefix(command, word)).toBe(false);
     }
   });
+
+  it('throttles every demon to its slow speed for the configured time', () => {
+    const session = devops();
+    const demon = enemy('ab', { speed: 50, distance: 1000 });
+    session.enemies = [demon];
+    const { speedScale, seconds } = config.spells.throttle;
+
+    type(session, config.classes.devops.skill.command);
+    const start = demon.distance;
+    session.update(1000);
+    expect(demon.distance).toBeCloseTo(start - 50 * speedScale);
+
+    session.update(seconds * 1000 - 1000);
+    expect(demon.distance).toBeCloseTo(start - 50 * speedScale * seconds);
+
+    session.update(1000);
+    expect(demon.distance).toBeCloseTo(start - 50 * speedScale * seconds - 50);
+  });
+
+  it('puts the skill on cooldown after use and makes it typable again when it ends', () => {
+    const { skill } = config.classes.devops;
+    const session = devops();
+    type(session, skill.command);
+    expect(session.skillReady).toBe(false);
+    // Typed during the cooldown it is a typo, not a cast.
+    expect(type(session, skill.command)[0].kind).toBe('typo');
+
+    const later = devops();
+    type(later, skill.command);
+    later.update(skill.cooldownSeconds * 1000);
+    expect(later.skillReady).toBe(true);
+    expect(type(later, skill.command).at(-1)?.kind).toBe('ability');
+  });
+
+  it('lets freeze stop demons even while throttled', () => {
+    const session = devops();
+    const demon = enemy('ab', { speed: 50 });
+    session.enemies = [demon];
+    const start = demon.distance;
+
+    session.cast('throttle');
+    session.cast('freeze');
+    session.update(1000);
+    expect(demon.distance).toBe(start);
+  });
 });

@@ -23,6 +23,7 @@ export type Cast =
   // healed: lives actually gained, 0 when they were full.
   | { spell: 'patch'; healed: number }
   | { spell: 'freeze' }
+  | { spell: 'throttle' }
   | { spell: 'firewall' }
   | { spell: 'linter' }
   | { spell: 'cache' };
@@ -99,6 +100,8 @@ export class GameSession {
   private wordFlawed = false;
   // Milliseconds left of a freeze: while it lasts no demon moves.
   private frozenMs = 0;
+  // Milliseconds left of a throttle: while it lasts every demon moves at the throttle speed.
+  private throttleMs = 0;
   // Milliseconds left of a cache: while it lasts a word's points are scaled up.
   private cacheMs = 0;
   /** Milliseconds until the skill is ready again; 0 when ready. */
@@ -164,6 +167,21 @@ export class GameSession {
     return Math.floor((this.ultimateCharge * 100) / ultimate.chargeWords);
   }
 
+  /** The skill's command; undefined for a role without a skill. */
+  get skillCommand(): string | undefined {
+    return abilitiesOf(this.heroClass).skill?.command;
+  }
+
+  /** Whole seconds until the skill is ready again, rounded up. */
+  get skillCooldownSeconds(): number {
+    return Math.ceil(this.skillCooldownMs / 1000);
+  }
+
+  /** The ultimate's command; undefined for a role without one. */
+  get ultimateCommand(): string | undefined {
+    return abilitiesOf(this.heroClass).ultimate?.command;
+  }
+
   /** The typed buffer starts a ready command: it is not a typo, whatever the demons match. */
   get typingCommand(): boolean {
     const { typed } = this;
@@ -217,6 +235,11 @@ export class GameSession {
     return this.frozenMs > 0;
   }
 
+  /** While a throttle lasts, every demon moves at the throttle speed. */
+  get throttled(): boolean {
+    return this.throttleMs > 0;
+  }
+
   /** While a cache lasts, each word's points are scaled up. */
   get cached(): boolean {
     return this.cacheMs > 0;
@@ -246,6 +269,10 @@ export class GameSession {
         // A second cache restarts the timer instead of adding to it.
         this.cacheMs = config.spells.cache.seconds * 1000;
         return { spell: 'cache' };
+      case 'throttle':
+        // A second throttle restarts the timer instead of adding to it.
+        this.throttleMs = config.spells.throttle.seconds * 1000;
+        return { spell: 'throttle' };
     }
   }
 
@@ -324,9 +351,12 @@ export class GameSession {
   }
 
   private advanceEnemies(deltaMs: number): { reached: EnemyState[]; blocked: number } {
+    // ponytail: per-frame granularity, a frame that straddles the end of a throttle is all slow; exact split if it ever matters.
+    const pace = this.throttled ? config.spells.throttle.speedScale : 1;
     const movingMs = Math.max(0, deltaMs - this.frozenMs);
     this.frozenMs = Math.max(0, this.frozenMs - deltaMs);
-    for (const enemy of this.enemies) enemy.distance -= (enemy.speed * movingMs) / 1000;
+    this.throttleMs = Math.max(0, this.throttleMs - deltaMs);
+    for (const enemy of this.enemies) enemy.distance -= (enemy.speed * movingMs * pace) / 1000;
     const reached = this.enemies.filter((enemy) => enemy.distance <= config.player.hitRadius);
     if (reached.length === 0) return { reached, blocked: 0 };
 

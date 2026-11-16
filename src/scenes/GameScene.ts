@@ -256,6 +256,7 @@ export class GameScene extends Phaser.Scene {
       enemy.moveTo(x, y, boxes[i]);
       enemy.highlight(matches.includes(state) ? typed.length : 0);
       enemy.setFrozen(this.session.frozen);
+      enemy.setThrottled(this.session.throttled);
     });
   }
 
@@ -272,6 +273,10 @@ export class GameScene extends Phaser.Scene {
       target,
       typingCommand,
       readyAbilities,
+      skillCommand,
+      skillReady,
+      skillCooldownSeconds,
+      ultimateCommand,
       ultimateReady,
       ultimatePercent,
     } = this.session;
@@ -291,12 +296,17 @@ export class GameScene extends Phaser.Scene {
       ...(cached ? [t('cache')] : []),
     ];
     this.drops.setText(drops.join(' '));
-    // Ready commands, then the ultimate's charge while it builds up.
-    const labels = readyAbilities.map((ready) => ready.command);
-    if (ultimatePercent !== undefined && !ultimateReady) {
-      labels.push(t('ultimateCharge', { percent: ultimatePercent }));
+    // Two lines: the skill, then the ultimate. Each shows its command when ready, else its wait.
+    const lines: string[] = [];
+    if (skillCommand !== undefined) {
+      lines.push(skillReady ? skillCommand : t('skillCooldown', { seconds: skillCooldownSeconds }));
     }
-    this.abilities.setText(labels.join(' '));
+    if (ultimateCommand !== undefined && ultimatePercent !== undefined) {
+      lines.push(
+        ultimateReady ? ultimateCommand : t('ultimateCharge', { percent: ultimatePercent }),
+      );
+    }
+    this.abilities.setText(lines.join('\n'));
     const abilitiesColor = readyAbilities.length > 0 ? config.colors.accent : config.colors.dim;
     if (this.abilities.style.color !== abilitiesColor) this.abilities.setColor(abilitiesColor);
     this.typedText.setText(typed);
