@@ -19,6 +19,7 @@ const en = {
   junior: 'JUNIOR DEV',
   devops: 'DEVOPS',
   dba: 'DBA',
+  cto: 'CTO',
   easy: 'EASY',
   normal: 'NORMAL',
   hard: 'HARD',
