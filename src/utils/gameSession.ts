@@ -70,7 +70,7 @@ interface RoleAbilities {
   // Every role has a tint: it keeps junior's `{ tint }` from being a weak, all-optional type.
   tint: number;
   skill?: { command: string; spell: SpellKey; cooldownSeconds: number };
-  ultimate?: { command: string; spell: SpellKey; chargeWords: number };
+  ultimate?: { command: string; spell: SpellKey; chargeWords: number; chargeSeconds: number };
 }
 
 const abilitiesOf = (heroClass: ClassKey): RoleAbilities => config.classes[heroClass];
@@ -118,7 +118,7 @@ export class GameSession {
   private descopeMs = 0;
   /** Milliseconds until the skill is ready again; 0 when ready. */
   skillCooldownMs = 0;
-  /** Perfect words toward the ultimate, up to its chargeWords. */
+  /** Charge toward the ultimate: perfect words and time, up to its chargeWords. */
   ultimateCharge = 0;
   lives: number = config.player.lives;
   elapsedMs = 0;
@@ -204,6 +204,13 @@ export class GameSession {
     this.elapsedMs += deltaMs;
     this.cacheMs = Math.max(0, this.cacheMs - deltaMs);
     this.skillCooldownMs = Math.max(0, this.skillCooldownMs - deltaMs);
+    const { ultimate } = abilitiesOf(this.heroClass);
+    if (ultimate) {
+      this.ultimateCharge = Math.min(
+        ultimate.chargeWords,
+        this.ultimateCharge + deltaMs / (ultimate.chargeSeconds * 1000),
+      );
+    }
     const undescoped = this.countDescope(deltaMs);
     const { reached, blocked } = this.advanceEnemies(deltaMs);
     const spawned = [...this.spawnIfDue(deltaMs), ...this.spawnTankIfDue(deltaMs)];

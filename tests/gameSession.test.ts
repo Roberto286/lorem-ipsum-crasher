@@ -1000,6 +1000,26 @@ describe('abilities', () => {
     expect(session.ultimateReady).toBe(true);
   });
 
+  it('charges the ultimate over time too, up to its cap', () => {
+    const session = devops();
+
+    session.update(ultimate.chargeSeconds * 1000);
+    expect(session.ultimateCharge).toBeCloseTo(1);
+
+    session.update(ultimate.chargeSeconds * ultimate.chargeWords * 1000);
+    expect(session.ultimateCharge).toBe(ultimate.chargeWords);
+    expect(session.ultimateReady).toBe(true);
+  });
+
+  it('perfect words still charge faster than waiting', () => {
+    const session = devops();
+
+    perfectWord(session);
+    session.update(1000);
+    expect(session.ultimateCharge).toBeLessThan(2);
+    expect(session.ultimateCharge).toBeCloseTo(1 + 1 / ultimate.chargeSeconds);
+  });
+
   it('does not charge the ultimate on a flawed word', () => {
     const session = devops();
     session.enemies = [enemy('sit')];

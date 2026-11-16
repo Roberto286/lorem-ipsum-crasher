@@ -184,25 +184,26 @@ export const config = {
   // Picked in the menu, in this order. Developer roles; each tints the hero sprite,
   // white leaves the art unchanged. A role may have a skill (command, spell, cooldownSeconds:
   // ready again that long after use) and an ultimate (command, spell, chargeWords: perfect words
-  // that charge it, emptied on use). Commands are typed while ready and must not share a prefix
-  // with any lorem word.
+  // that charge it, chargeSeconds: one word of charge per this many seconds, so perfect words
+  // stay the main source; emptied on use). Commands are typed while ready and must not share a
+  // prefix with any lorem word.
   classes: {
     junior: { tint: 0xffffff },
     devops: {
       tint: 0x9fd8ff,
       skill: { command: 'throttle', spell: 'throttle', cooldownSeconds: 12 },
-      ultimate: { command: 'freeze', spell: 'freeze', chargeWords: 20 },
+      ultimate: { command: 'freeze', spell: 'freeze', chargeWords: 20, chargeSeconds: 6 },
     },
     dba: {
       tint: 0xff9a3c,
       skill: { command: 'truncate', spell: 'truncate', cooldownSeconds: 10 },
       // Charges slower than the devops freeze: drop clears every demon, not just stops them.
-      ultimate: { command: 'drop', spell: 'drop', chargeWords: 30 },
+      ultimate: { command: 'drop', spell: 'drop', chargeWords: 30, chargeSeconds: 8 },
     },
     cto: {
       tint: 0xb98cff,
       skill: { command: 'pushback', spell: 'pushback', cooldownSeconds: 8 },
-      ultimate: { command: 'descope', spell: 'descope', chargeWords: 25 },
+      ultimate: { command: 'descope', spell: 'descope', chargeWords: 25, chargeSeconds: 7 },
     },
   },
   defaultClass: 'junior',
