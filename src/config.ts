@@ -100,6 +100,14 @@ export const config = {
   typedBox: { height: 24, errorFlashMs: 150, maxLetters: 40 },
   // Opaque strip on top of the screen: score, lives and time on the left, buttons on the right.
   hud: { height: 24, padding: 4 },
+  // Some demons carry a spell, cast when the carrier is killed by typing; GameSession.cast is
+  // the one entry point. weight: relative odds among the carried spells. color: label background
+  // of the carrier.
+  spells: {
+    // lives: lives given back, up to player.lives. The HUD text swells to pulseScale and back,
+    // pulseMs each way.
+    heal: { weight: 1, color: 0x1e8a3c, lives: 1, pulseMs: 150, pulseScale: 1.2 },
+  },
   // Picked in the menu. Harder: enemies spawn closer together and carry more words each.
   // wholePhrase: the words form one phrase that must be typed in a single go, spaces included.
   // erasableTypos: a wrong letter stays in the buffer until erased with Backspace; without it a
@@ -174,6 +182,14 @@ export const config = {
     ],
     minSpawnIntervalMs: 400,
     maxKamikazeChance: 0.35,
+    // Chance that a regular spawn carries a spell, held between 0 and maxSpellChance: none at
+    // the start of a run, then about one demon in ten.
+    spellChance: [
+      [0, 0],
+      [90, 0.05],
+      [180, 0.1],
+    ],
+    maxSpellChance: 0.12,
     // Tanks ignore the spawn interval and the dice: the first one comes after `first` seconds,
     // then one every `every` seconds.
     tankSpawnSeconds: { first: 60, every: 60 },
@@ -183,3 +199,4 @@ export const config = {
 export type LevelKey = keyof typeof config.levels;
 export type ClassKey = keyof typeof config.classes;
 export type EnemyType = keyof typeof config.enemyTypes;
+export type SpellKey = keyof typeof config.spells;

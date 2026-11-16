@@ -18,6 +18,8 @@ export class Enemy {
   private readonly label: Phaser.GameObjects.Text;
   /** Drawn over the label: the typed letters of the top word, every other glyph blank. */
   private readonly typedLetters: Phaser.GameObjects.Text;
+  /** Around the label of a tank that carries a spell. */
+  private readonly frame?: Phaser.GameObjects.Rectangle;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -28,8 +30,15 @@ export class Enemy {
     // The art faces right: flip the demons that walk in from the right.
     this.sprite.setFlipX(Math.cos(state.angle) > 0);
     const padding = { x: 2, y: 2 };
+    const spellColor = state.spell && config.spells[state.spell].color;
+    // A carrier shows its spell behind its words. The tank keeps its own background, the mark
+    // of the miniboss: its spell frames the label instead.
+    const framed = state.type === 'tank';
     this.label = addText(scene, 0, 0, '', {
-      backgroundColor: config.colors.labelBackground[state.type],
+      backgroundColor:
+        spellColor === undefined || framed
+          ? config.colors.labelBackground[state.type]
+          : Phaser.Display.Color.IntegerToColor(spellColor).rgba,
       padding,
     })
       .setOrigin(0.5, 1)
@@ -37,6 +46,12 @@ export class Enemy {
     this.typedLetters = addText(scene, 0, 0, '', { color: config.colors.accent, padding })
       .setOrigin(0.5, 1)
       .setDepth(config.depths.enemyLabel);
+    if (spellColor !== undefined && framed) {
+      this.frame = scene.add
+        .rectangle(0, 0, 0, 0)
+        .setStrokeStyle(1, spellColor)
+        .setDepth(config.depths.enemyLabel);
+    }
     this.setWords(state.words);
   }
 
@@ -66,6 +81,10 @@ export class Enemy {
       Phaser.Math.Clamp(labelBottom, playTop + this.label.height, playBottom),
     );
     this.typedLetters.setPosition(this.label.x, this.label.y);
+    // The label shrinks as its words go, so the frame is fitted to it every time.
+    this.frame
+      ?.setPosition(this.label.x, this.label.y - this.label.height / 2)
+      .setSize(this.label.width, this.label.height);
   }
 
   /** Marks an enemy that got faster after a typo on its word. */
@@ -75,7 +94,7 @@ export class Enemy {
 
   vanish(): void {
     this.scene.tweens.add({
-      targets: [this.sprite, this.label, this.typedLetters],
+      targets: this.parts,
       alpha: 0,
       scale: 2,
       duration: config.enemy.vanishMs,
@@ -84,8 +103,11 @@ export class Enemy {
   }
 
   destroy(): void {
-    this.sprite.destroy();
-    this.label.destroy();
-    this.typedLetters.destroy();
+    for (const part of this.parts) part.destroy();
+  }
+
+  private get parts(): Phaser.GameObjects.GameObject[] {
+    const parts = [this.sprite, this.label, this.typedLetters];
+    return this.frame ? [...parts, this.frame] : parts;
   }
 }

@@ -639,3 +639,72 @@ describe('combo', () => {
     expect(session.multiplier).toBe(2);
   });
 });
+
+describe('spells', () => {
+  // Late enough in a run that the spell chance is past zero.
+  const lateMs = 180_000;
+  const spellChance = difficultyAt(lateMs / 1000, 'normal').spellChance;
+
+  it('gives no demon a spell at the start of a run', () => {
+    expect(newSession(() => 0.5).update(16).spawned[0].spell).toBeUndefined();
+  });
+
+  it('gives a regular spawn a spell only when its roll is under the chance', () => {
+    // The first spawn of the update is the regular one, before any tank.
+    expect(newSession(() => spellChance / 2).update(lateMs).spawned[0].spell).toBeDefined();
+    expect(newSession(() => spellChance).update(lateMs).spawned[0].spell).toBeUndefined();
+  });
+
+  it('gives every tank a spell, whatever its roll', () => {
+    for (let i = 0; i < 100; i++) {
+      const tank = newSession(() => i / 100)
+        .update(config.difficulty.tankSpawnSeconds.first * 1000)
+        .spawned.find((state) => state.type === 'tank');
+      expect(tank?.spell).toBeDefined();
+    }
+  });
+
+  it('gives back a life on a heal, never past the full count', () => {
+    const session = newSession();
+    session.lives = config.player.lives - 1;
+
+    session.cast('heal');
+    expect(session.lives).toBe(config.player.lives);
+    expect(session.cast('heal')).toEqual({ spell: 'heal', healed: 0 });
+  });
+
+  it('casts the spell of a carrier killed by typing', () => {
+    const session = newSession();
+    session.lives = config.player.lives - config.spells.heal.lives;
+    session.enemies = [enemy('ab', { spell: 'heal' })];
+
+    expect(type(session, 'ab').at(-1)).toEqual({
+      kind: 'kill',
+      enemy: expect.objectContaining({ id: 100 }),
+      word: 'ab',
+      cast: { spell: 'heal', healed: config.spells.heal.lives },
+    });
+  });
+
+  it('casts nothing when a demon without a spell dies', () => {
+    const session = newSession();
+    session.enemies = [enemy('ab')];
+
+    expect(type(session, 'ab').at(-1)).toEqual({
+      kind: 'kill',
+      enemy: expect.objectContaining({ id: 100 }),
+      word: 'ab',
+    });
+  });
+
+  it('loses the spell of a carrier that reaches the hero', () => {
+    const session = newSession();
+    session.lives = config.player.lives - 1;
+    session.enemies = [enemy('ab', { spell: 'heal', distance: config.player.hitRadius })];
+
+    const { reached } = session.update(0);
+
+    expect(reached.map((e) => e.id)).toEqual([100]);
+    expect(session.lives).toBe(config.player.lives - 1 - config.enemyTypes.grunt.damage);
+  });
+});

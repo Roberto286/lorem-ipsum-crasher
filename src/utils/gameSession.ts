@@ -1,4 +1,4 @@
-import { config, type EnemyType, type LevelKey } from '../config';
+import { config, type EnemyType, type LevelKey, type SpellKey } from '../config';
 import { difficultyAt } from './difficulty';
 import { pickWord } from './words';
 
@@ -14,7 +14,14 @@ export interface EnemyState {
   angle: number;
   distance: number;
   speed: number;
+  /** Cast when the enemy is killed by typing; lost if it reaches the player. */
+  spell?: SpellKey;
 }
+
+/** What a spell did, for the scene to show. */
+export type Cast =
+  // healed: lives actually gained, 0 when they were full.
+  { spell: 'heal'; healed: number };
 
 export type TypeResult =
   | { kind: 'progress' }
@@ -22,12 +29,22 @@ export type TypeResult =
   | { kind: 'typo' }
   // enemy: the target that got faster, if a word was being typed.
   | { kind: 'error'; enemy?: EnemyState }
-  // word: a word was completed but the enemy has more; kill: it was the last one.
-  | { kind: 'word' | 'kill'; enemy: EnemyState; word: string };
+  // A word was completed but the enemy has more.
+  | { kind: 'word'; enemy: EnemyState; word: string }
+  // It was the last one. cast: the spell of a carrier, already applied.
+  | { kind: 'kill'; enemy: EnemyState; word: string; cast?: Cast };
 
 export interface UpdateResult {
   spawned: EnemyState[];
   reached: EnemyState[];
+}
+
+/** The spell at `roll` (0 to 1) along the configured weights. */
+function spellAt(roll: number): SpellKey {
+  const spells = Object.keys(config.spells) as SpellKey[];
+  const total = spells.reduce((sum, spell) => sum + config.spells[spell].weight, 0);
+  let left = roll * total;
+  return spells.find((spell) => (left -= config.spells[spell].weight) < 0) ?? spells[0];
 }
 
 /** Whole game state and rules, free of rendering so it runs in tests. */
@@ -94,7 +111,25 @@ export class GameSession {
     this.typed = '';
     if (completed.words.length > 0) return { kind: 'word', enemy: completed, word: typed };
     this.enemies = this.enemies.filter((enemy) => enemy !== completed);
-    return { kind: 'kill', enemy: completed, word: typed };
+    const cast = completed.spell ? this.cast(completed.spell) : undefined;
+    return { kind: 'kill', enemy: completed, word: typed, cast };
+  }
+
+  /**
+   * Casts a spell at once, whoever asks: a carrier that was just killed, or the hero. Spells
+   * score no combo points and leave the multiplier and the streak alone.
+   */
+  cast(spell: SpellKey): Cast {
+    switch (spell) {
+      case 'heal':
+        return this.heal(config.spells.heal.lives);
+    }
+  }
+
+  private heal(lives: number): Cast {
+    const healed = Math.min(lives, config.player.lives - this.lives);
+    this.lives += healed;
+    return { spell: 'heal', healed };
   }
 
   /** Removes the last typed letter; strict levels have nothing to erase. */
@@ -168,14 +203,15 @@ export class GameSession {
 
     const difficulty = difficultyAt(this.elapsedMs / 1000, this.level);
     this.untilSpawnMs += difficulty.spawnIntervalMs;
-    if (this.rng() < difficulty.kamikazeChance) {
+    const { kamikazeChance, spellChance, enemySpeed } = difficulty;
+    if (this.rng() < kamikazeChance) {
       const word = this.pickWords(1, config.enemyTypes.kamikaze.maxWordLength);
-      return [this.spawn('kamikaze', this.sideAngle(), word, difficulty.enemySpeed)];
+      return [this.spawn('kamikaze', this.sideAngle(), word, enemySpeed, spellChance)];
     }
     const angle = this.rng() * Math.PI * 2;
     const wordCount = 1 + Math.floor(this.rng() * difficulty.maxWords);
     const words = this.pickWords(wordCount, difficulty.maxWordLength);
-    return [this.spawn('grunt', angle, this.phrases(words, wordCount), difficulty.enemySpeed)];
+    return [this.spawn('grunt', angle, this.phrases(words, wordCount), enemySpeed, spellChance)];
   }
 
   /** The miniboss comes on its own clock, whatever the spawn interval and the rng say. */
@@ -190,7 +226,9 @@ export class GameSession {
     const words = this.pickWords(wordCount, Math.min(difficulty.maxWordLength, maxWordLength));
     // Short phrases: all its words in one would be too long to type in a single go.
     const texts = this.phrases(words, phraseWords);
-    return [this.spawn('tank', this.sideAngle(), texts, difficulty.enemySpeed)];
+    // The miniboss always carries a spell: a roll is always under a chance of 1.
+    const { enemySpeed } = difficulty;
+    return [this.spawn('tank', this.sideAngle(), texts, enemySpeed, 1)];
   }
 
   /** The texts to type: the words as they are, or joined `size` at a time on phrase levels. */
@@ -221,8 +259,16 @@ export class GameSession {
     return Math.atan2(y, side * this.halfWidth);
   }
 
-  private spawn(type: EnemyType, angle: number, words: string[], baseSpeed: number): EnemyState {
+  /** spellChance: the last roll of a spawn decides whether it carries a spell, and which. */
+  private spawn(
+    type: EnemyType,
+    angle: number,
+    words: string[],
+    baseSpeed: number,
+    spellChance: number,
+  ): EnemyState {
     const { speedScale, maxSpeed } = config.enemyTypes[type];
+    const roll = this.rng();
     const enemy: EnemyState = {
       id: this.nextId++,
       type,
@@ -234,6 +280,8 @@ export class GameSession {
         this.halfHeight / Math.abs(Math.sin(angle)),
       ),
       speed: Math.min(maxSpeed, baseSpeed * speedScale),
+      // One roll for both: under the chance it is spread evenly, so it also picks the spell.
+      spell: roll < spellChance ? spellAt(roll / spellChance) : undefined,
     };
     this.enemies.push(enemy);
     return enemy;

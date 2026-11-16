@@ -3,7 +3,7 @@ import { config, type ClassKey } from '../config';
 import { Enemy } from '../entities/Enemy';
 import { Player } from '../entities/Player';
 import { hurlWord } from '../entities/wordProjectile';
-import { GameSession } from '../utils/gameSession';
+import { GameSession, type Cast } from '../utils/gameSession';
 import { t } from '../utils/i18n';
 import { listenForKeys } from '../utils/keyboard';
 import { saveScore } from '../utils/scoreStorage';
@@ -133,6 +133,7 @@ export class GameScene extends Phaser.Scene {
     const result = this.session.typeLetter(letter);
     if (result.kind === 'kill' || result.kind === 'word') {
       const { kind, enemy: state, word } = result;
+      if (result.kind === 'kill' && result.cast) this.showCast(result.cast);
       // A killed enemy has already left the session: its sprite waits for the word to land.
       const enemy = kind === 'kill' ? this.removeEnemy(state.id) : this.enemies.get(state.id);
       if (!enemy) return;
@@ -154,6 +155,25 @@ export class GameScene extends Phaser.Scene {
         this.typedBox.setFillStyle(config.colors.panel),
       );
     }
+  }
+
+  /** Shows a spell that the session has already applied. */
+  private showCast(cast: Cast): void {
+    if (cast.healed > 0) this.pulseHud();
+  }
+
+  private pulseHud(): void {
+    const { pulseMs, pulseScale } = config.spells.heal;
+    // A second heal during the pulse starts it over instead of piling the scales up.
+    this.tweens.killTweensOf(this.hud);
+    this.hud.setScale(1).setColor(config.colors.accent);
+    this.tweens.add({
+      targets: this.hud,
+      scale: pulseScale,
+      duration: pulseMs,
+      yoyo: true,
+      onComplete: () => this.hud.setColor(config.colors.text),
+    });
   }
 
   private handleBackspace(): void {

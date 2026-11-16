@@ -9,6 +9,8 @@ export interface Difficulty {
   maxWords: number;
   /** Chance (0 to 1) that a regular spawn is a kamikaze. */
   kamikazeChance: number;
+  /** Chance (0 to 1) that a regular spawn carries a spell. */
+  spellChance: number;
 }
 
 export function sampleCurve(points: Curve, seconds: number): number {
@@ -35,5 +37,9 @@ export function difficultyAt(seconds: number, level: LevelKey): Difficulty {
     maxWords: maxWordsPerEnemy,
     kamikazeChance:
       Math.min(difficulty.maxKamikazeChance, Math.max(0, kamikazeChance)) * kamikazeChanceScale,
+    spellChance: Math.min(
+      difficulty.maxSpellChance,
+      Math.max(0, sampleCurve(difficulty.spellChance, seconds)),
+    ),
   };
 }

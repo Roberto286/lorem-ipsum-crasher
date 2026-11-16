@@ -84,4 +84,13 @@ describe('difficultyAt', () => {
     expect(normal.maxWords).toBeGreaterThan(easy.maxWords);
     expect(hard.maxWords).toBe(3);
   });
+
+  it('gives spells to no demons at the start, then more of them, up to a cap', () => {
+    const chanceAt = (seconds: number) => difficultyAt(seconds, 'normal').spellChance;
+
+    expect(chanceAt(0)).toBe(0);
+    expect(chanceAt(knee)).toBeGreaterThan(0);
+    expect(chanceAt(knee + 30)).toBeGreaterThan(chanceAt(knee));
+    expect(chanceAt(100_000)).toBe(config.difficulty.maxSpellChance);
+  });
 });
