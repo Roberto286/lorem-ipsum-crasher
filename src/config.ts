@@ -132,6 +132,9 @@ export const config = {
     // letters: letters cut from the end of each demon's next text by the dba skill. The text
     // keeps at least one letter. Not carried: only the dba skill casts it.
     truncate: { letters: 2 },
+    // shakeMs: how long the screen shakes when the dba ultimate drops every demon. Not carried:
+    // only the dba ultimate casts it.
+    drop: { shakeMs: 250 },
   },
   // Picked in the menu. Harder: enemies spawn closer together and carry more words each.
   // wholePhrase: the words form one phrase that must be typed in a single go, spaces included.
@@ -184,6 +187,8 @@ export const config = {
     dba: {
       tint: 0xff9a3c,
       skill: { command: 'truncate', spell: 'truncate', cooldownSeconds: 10 },
+      // Charges slower than the devops freeze: drop clears every demon, not just stops them.
+      ultimate: { command: 'drop', spell: 'drop', chargeWords: 30 },
     },
     cto: { tint: 0xb98cff },
   },

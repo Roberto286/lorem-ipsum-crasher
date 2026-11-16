@@ -28,7 +28,9 @@ export type Cast =
   | { spell: 'linter' }
   | { spell: 'cache' }
   // changed: the demons whose next word a cut shortened, closest first.
-  | { spell: 'truncate'; changed: EnemyState[] };
+  | { spell: 'truncate'; changed: EnemyState[] }
+  // killed: every demon the drop removed, with its texts.
+  | { spell: 'drop'; killed: EnemyState[] };
 
 export type TypeResult =
   | { kind: 'progress' }
@@ -277,6 +279,8 @@ export class GameSession {
         return { spell: 'throttle' };
       case 'truncate':
         return this.truncate();
+      case 'drop':
+        return this.drop();
     }
   }
 
@@ -313,6 +317,21 @@ export class GameSession {
       return text !== word;
     }
     return false;
+  }
+
+  /**
+   * Removes every demon on screen. Their letters score at the base rate, with neither the
+   * multiplier nor a cache; the streak and the combo are left alone. Clears the typed buffer.
+   */
+  private drop(): Cast {
+    const killed = this.enemies;
+    this.enemies = [];
+    for (const enemy of killed) {
+      const letters = enemy.words.join('').replace(/ /g, '').length;
+      this.score += letters * config.pointsPerLetter;
+    }
+    this.typed = '';
+    return { spell: 'drop', killed };
   }
 
   private heal(lives: number): Cast {

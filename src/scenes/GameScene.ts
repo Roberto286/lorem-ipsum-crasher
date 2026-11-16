@@ -184,7 +184,7 @@ export class GameScene extends Phaser.Scene {
       );
     } else if (result.kind === 'ability') {
       this.showCast(result.cast);
-      this.sound.play('kill');
+      if (result.cast.spell !== 'drop' || result.cast.killed.length === 0) this.sound.play('kill');
     }
   }
 
@@ -193,6 +193,12 @@ export class GameScene extends Phaser.Scene {
     if (cast.spell === 'patch' && cast.healed > 0) this.pulseHud();
     if (cast.spell === 'truncate') {
       for (const state of cast.changed) this.enemies.get(state.id)?.setWords(state.words);
+    }
+    if (cast.spell === 'drop') {
+      for (const state of cast.killed) this.removeEnemy(state.id)?.vanish();
+      if (cast.killed.length > 0)
+        this.sound.play(config.enemyTypes[cast.killed[0].type].deathSound);
+      this.cameras.main.shake(config.spells.drop.shakeMs, 0.01);
     }
   }
 

@@ -1200,4 +1200,48 @@ describe('abilities', () => {
     expect(session.skillReady).toBe(false);
     expect(type(session, skill.command)[0].kind).toBe('typo');
   });
+
+  it('drops every demon and scores their letters without the multiplier', () => {
+    const session = dba();
+    session.enemies = [enemy('sit'), enemy('amet', { id: 101, words: ['amet', 'id'] })];
+    session.multiplier = 3;
+    session.cast('cache');
+
+    session.cast('drop');
+
+    expect(session.enemies).toEqual([]);
+    expect(session.score).toBe(9 * config.pointsPerLetter);
+  });
+
+  it('leaves the combo alone when dropping', () => {
+    const session = dba();
+    session.enemies = [enemy('sit')];
+    session.multiplier = 3;
+    session.streak = 2;
+
+    session.cast('drop');
+
+    expect(session.multiplier).toBe(3);
+    expect(session.streak).toBe(2);
+  });
+
+  it('casts none of the dropped demons spells', () => {
+    const session = dba();
+    session.enemies = [enemy('sit', { spell: 'patch' })];
+    session.lives = 1;
+
+    session.cast('drop');
+
+    expect(session.lives).toBe(1);
+  });
+
+  it('empties the typed buffer', () => {
+    const session = dba();
+    session.enemies = [enemy('sit')];
+    type(session, 'si');
+
+    session.cast('drop');
+
+    expect(session.typed).toBe('');
+  });
 });
