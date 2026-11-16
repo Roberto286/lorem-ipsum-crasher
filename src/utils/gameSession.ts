@@ -16,6 +16,8 @@ export interface EnemyState {
   speed: number;
   /** Cast when the enemy is killed by typing; lost if it reaches the player. */
   spell?: CarriedSpell;
+  /** The short word the descope ultimate gave this demon: typed, it kills the demon. */
+  descoped?: string;
 }
 
 /** What a spell did, for the scene to show. */
@@ -31,7 +33,8 @@ export type Cast =
   | { spell: 'truncate'; changed: EnemyState[] }
   // killed: every demon the drop removed, with its texts.
   | { spell: 'drop'; killed: EnemyState[] }
-  | { spell: 'pushback' };
+  | { spell: 'pushback' }
+  | { spell: 'descope'; changed: EnemyState[] };
 
 export type TypeResult =
   | { kind: 'progress' }
@@ -51,6 +54,8 @@ export interface UpdateResult {
   reached: EnemyState[];
   // Demons the firewall absorbed: they are in reached too.
   blocked: number;
+  // Demons whose descope window ended this frame: their full words are back.
+  undescoped: EnemyState[];
 }
 
 /** An ability whose command can be typed now: typing the command fires it. */
@@ -109,6 +114,8 @@ export class GameSession {
   private throttleMs = 0;
   // Milliseconds left of a cache: while it lasts a word's points are scaled up.
   private cacheMs = 0;
+  // Milliseconds left of a descope: while it lasts, the demons it touched type short words.
+  private descopeMs = 0;
   /** Milliseconds until the skill is ready again; 0 when ready. */
   skillCooldownMs = 0;
   /** Perfect words toward the ultimate, up to its chargeWords. */
@@ -197,9 +204,10 @@ export class GameSession {
     this.elapsedMs += deltaMs;
     this.cacheMs = Math.max(0, this.cacheMs - deltaMs);
     this.skillCooldownMs = Math.max(0, this.skillCooldownMs - deltaMs);
+    const undescoped = this.countDescope(deltaMs);
     const { reached, blocked } = this.advanceEnemies(deltaMs);
     const spawned = [...this.spawnIfDue(deltaMs), ...this.spawnTankIfDue(deltaMs)];
-    return { spawned, reached, blocked };
+    return { spawned, reached, blocked, undescoped };
   }
 
   typeLetter(letter: string): TypeResult {
@@ -216,20 +224,23 @@ export class GameSession {
     const commandStarted = ready.some((ability) => ability.command.startsWith(typed));
     if (matches.length === 0 && !commandStarted) return this.mistype(typed);
 
-    const completed = matches.find((enemy) => enemy.words[0] === typed);
+    const completed = matches.find((enemy) => this.nextText(enemy) === typed);
     if (!completed) {
       this.typed = typed;
       return { kind: 'progress' };
     }
 
-    completed.words.shift();
+    // A descoped demon dies at its short word, whatever words it had left.
+    const descoped = completed.descoped !== undefined;
+    if (!descoped) completed.words.shift();
     // A drop rewards a clean kill: read the flaw before countWord() clears it.
     const clean = !this.wordFlawed;
     const scale = this.cached ? config.spells.cache.scoreScale : 1;
     this.score += typed.length * config.pointsPerLetter * this.multiplier * scale;
     this.countWord();
     this.typed = '';
-    if (completed.words.length > 0) return { kind: 'word', enemy: completed, word: typed };
+    if (!descoped && completed.words.length > 0)
+      return { kind: 'word', enemy: completed, word: typed };
     this.enemies = this.enemies.filter((enemy) => enemy !== completed);
     const cast = completed.spell && clean ? this.cast(completed.spell) : undefined;
     return { kind: 'kill', enemy: completed, word: typed, cast };
@@ -284,6 +295,8 @@ export class GameSession {
         return this.drop();
       case 'pushback':
         return this.pushback();
+      case 'descope':
+        return this.descope();
     }
   }
 
@@ -344,6 +357,44 @@ export class GameSession {
       enemy.distance = Math.min(edge, enemy.distance + config.spells.pushback.pixels);
     }
     return { spell: 'pushback' };
+  }
+
+  /**
+   * Every demon on screen gets a short word for the window, closest first. A demon that has one
+   * keeps it, so a recast only restarts the timer and descopes the demons that came since.
+   */
+  private descope(): Cast {
+    this.descopeMs = config.spells.descope.seconds * 1000;
+    const changed: EnemyState[] = [];
+    const closest = [...this.enemies].sort((a, b) => a.distance - b.distance);
+    for (const enemy of closest) {
+      if (enemy.descoped !== undefined) continue;
+      const short = this.shortWord(enemy);
+      if (short === undefined) continue;
+      enemy.descoped = short;
+      changed.push(enemy);
+    }
+    return { spell: 'descope', changed };
+  }
+
+  /**
+   * The shortest prefix of the enemy's first word that is at least descope.letters long and,
+   * while the enemy matches the buffer, longer than it. It shares no prefix with another demon's
+   * full word or short word. Undefined when none qualifies: the demon keeps its words.
+   */
+  private shortWord(enemy: EnemyState): string | undefined {
+    const first = enemy.words[0].split(' ')[0];
+    const typing = this.typed !== '' && enemy.words[0].startsWith(this.typed);
+    const floor = Math.max(config.spells.descope.letters, typing ? this.typed.length + 1 : 0);
+    const others = this.enemies
+      .filter((other) => other !== enemy)
+      .flatMap((other) => [other.words[0], other.descoped ?? other.words[0]]);
+    for (let length = floor; length <= first.length; length++) {
+      const text = first.slice(0, length);
+      if (others.some((other) => text.startsWith(other) || other.startsWith(text))) continue;
+      return text;
+    }
+    return undefined;
   }
 
   private heal(lives: number): Cast {
@@ -416,8 +467,28 @@ export class GameSession {
 
   private matching(prefix: string): EnemyState[] {
     return this.enemies
-      .filter((enemy) => enemy.words[0].startsWith(prefix))
+      .filter((enemy) => this.nextText(enemy).startsWith(prefix))
       .sort((a, b) => a.distance - b.distance);
+  }
+
+  /** What the demon is typed through now: its short word while descoped, else its first word. */
+  private nextText(enemy: EnemyState): string {
+    return enemy.descoped ?? enemy.words[0];
+  }
+
+  /**
+   * Counts the descope window down. When it ends every demon gets its full words back, and the
+   * buffer is cleared if it was typing a short word and now matches nothing.
+   */
+  private countDescope(deltaMs: number): EnemyState[] {
+    if (this.descopeMs === 0) return [];
+    this.descopeMs = Math.max(0, this.descopeMs - deltaMs);
+    if (this.descopeMs > 0) return [];
+    const undescoped = this.enemies.filter((enemy) => enemy.descoped !== undefined);
+    const wasTyped = undescoped.some((enemy) => enemy.descoped?.startsWith(this.typed));
+    for (const enemy of undescoped) delete enemy.descoped;
+    if (wasTyped && this.matching(this.typed).length === 0) this.typed = '';
+    return undescoped;
   }
 
   private advanceEnemies(deltaMs: number): { reached: EnemyState[]; blocked: number } {
@@ -444,7 +515,7 @@ export class GameSession {
     }
     // The half-typed word may have just hit the player: do not leave its letters behind. A
     // buffer holding a typo matched nobody to begin with, so it stays for the player to fix.
-    const wasTyped = reached.some((enemy) => enemy.words[0].startsWith(this.typed));
+    const wasTyped = reached.some((enemy) => this.nextText(enemy).startsWith(this.typed));
     if (wasTyped && this.matching(this.typed).length === 0) this.typed = '';
     return { reached, blocked };
   }
@@ -495,7 +566,10 @@ export class GameSession {
 
   /** Words clear of prefix collisions with everything on screen and with each other. */
   private pickWords(count: number, maxLength: number): string[] {
-    const taken = this.enemies.flatMap((active) => active.words);
+    // A short word is taken too: a new demon must not start with it.
+    const taken = this.enemies.flatMap((active) =>
+      active.descoped === undefined ? active.words : [...active.words, active.descoped],
+    );
     // Each pick joins the list the next one must avoid, the enemy's own words included.
     return Array.from({ length: count }, () => {
       const word = pickWord(maxLength, taken, this.rng);

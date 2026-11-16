@@ -138,6 +138,10 @@ export const config = {
     // pixels: distance the cto skill pushes every demon back by, never past the edge it came in
     // from. Not carried: only the cto skill casts it.
     pushback: { pixels: 40 },
+    // seconds: how long the cto ultimate lasts. Each demon on screen at the cast needs only a
+    // short word, at least letters long; typing it kills the demon whatever words it had left.
+    // Not carried: only the cto ultimate casts it.
+    descope: { seconds: 6, letters: 3 },
   },
   // Picked in the menu. Harder: enemies spawn closer together and carry more words each.
   // wholePhrase: the words form one phrase that must be typed in a single go, spaces included.
@@ -196,6 +200,7 @@ export const config = {
     cto: {
       tint: 0xb98cff,
       skill: { command: 'pushback', spell: 'pushback', cooldownSeconds: 8 },
+      ultimate: { command: 'descope', spell: 'descope', chargeWords: 25 },
     },
   },
   defaultClass: 'junior',

@@ -73,7 +73,7 @@ export class GameScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     if (this.paused) return;
 
-    const { spawned, reached, blocked } = this.session.update(delta);
+    const { spawned, reached, blocked, undescoped } = this.session.update(delta);
     for (const state of spawned) {
       this.enemies.set(state.id, new Enemy(this, state));
       const enemyType = config.enemyTypes[state.type];
@@ -86,6 +86,7 @@ export class GameScene extends Phaser.Scene {
         }
       }
     }
+    for (const state of undescoped) this.enemies.get(state.id)?.setWords();
     for (const state of reached) this.removeEnemy(state.id)?.destroy();
     if (reached.length > blocked) this.showPlayerHit();
     else if (blocked > 0) {
@@ -171,7 +172,7 @@ export class GameScene extends Phaser.Scene {
         if (!enemy.sprite.active) return;
         this.sound.play(kind === 'kill' ? config.enemyTypes[state.type].deathSound : 'kill');
         if (kind === 'kill') enemy.vanish();
-        else enemy.setWords(state.words);
+        else enemy.setWords();
       });
     } else if (result.kind === 'typo') {
       this.sound.play('error');
@@ -192,7 +193,10 @@ export class GameScene extends Phaser.Scene {
   private showCast(cast: Cast): void {
     if (cast.spell === 'patch' && cast.healed > 0) this.pulseHud();
     if (cast.spell === 'truncate') {
-      for (const state of cast.changed) this.enemies.get(state.id)?.setWords(state.words);
+      for (const state of cast.changed) this.enemies.get(state.id)?.setWords();
+    }
+    if (cast.spell === 'descope') {
+      for (const state of cast.changed) this.enemies.get(state.id)?.setWords();
     }
     if (cast.spell === 'drop') {
       for (const state of cast.killed) this.removeEnemy(state.id)?.vanish();

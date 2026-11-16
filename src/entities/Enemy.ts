@@ -55,12 +55,17 @@ export class Enemy {
         .setStrokeStyle(1, spellColor)
         .setDepth(config.depths.enemyLabel);
     }
-    this.setWords(state.words);
+    this.setWords();
   }
 
-  /** Shows the remaining texts: the top one is typed next. */
-  setWords(words: string[]): void {
-    this.label.setText(labelText(words));
+  /** Shows the state's texts: the short word while descoped, else the remaining words. */
+  setWords(): void {
+    this.label.setText(labelText(this.texts));
+  }
+
+  /** The texts the player types through now: the top one is typed next. */
+  private get texts(): string[] {
+    return this.state.descoped === undefined ? this.state.words : [this.state.descoped];
   }
 
   /** Lights up the first typed letters of the top word. */
@@ -68,7 +73,7 @@ export class Enemy {
     const shown = this.label.text;
     // The label lags the session while a hurled word is in flight: its top word is not the
     // one being typed any more.
-    const count = shown === labelText(this.state.words) ? letters : 0;
+    const count = shown === labelText(this.texts) ? letters : 0;
     // Same text and layout as the label, so the monospace glyphs land exactly on its own.
     const blanked = shown.slice(count).replace(/[^\n]/g, ' ');
     this.typedLetters.setText(shown.slice(0, count) + blanked).setVisible(count > 0);

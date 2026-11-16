@@ -1281,4 +1281,79 @@ describe('abilities', () => {
     expect(session.skillReady).toBe(false);
     expect(type(session, skill.command)[0].kind).toBe('typo');
   });
+
+  it('shortens every demon on screen to a short word for the window', () => {
+    const session = cto();
+    session.enemies = [enemy('consectetur'), enemy('adipiscing', { id: 101 })];
+
+    session.cast('descope');
+
+    expect(session.enemies.map((state) => state.descoped)).toEqual(['con', 'adi']);
+  });
+
+  it('kills a demon whose short word is typed, whatever words it had left', () => {
+    const session = cto();
+    session.enemies = [enemy('consectetur', { words: ['consectetur', 'amet'] })];
+    session.cast('descope');
+
+    const results = type(session, 'con');
+
+    expect(results[2].kind).toBe('kill');
+    expect(session.enemies).toEqual([]);
+  });
+
+  it('keeps short words free of shared prefixes', () => {
+    const session = cto();
+    session.enemies = [enemy('dolor'), enemy('dolce', { id: 101 })];
+
+    session.cast('descope');
+
+    const [first, second] = session.enemies.map((state) => state.descoped ?? '');
+    expect(sharesPrefix(first, second)).toBe(false);
+    expect(sharesPrefix(first, 'dolce')).toBe(false);
+    expect(sharesPrefix(second, 'dolor')).toBe(false);
+  });
+
+  it('keeps the word being typed longer than the buffer', () => {
+    const session = cto();
+    session.enemies = [enemy('consectetur')];
+    session.typed = 'cons';
+
+    session.cast('descope');
+
+    const short = session.enemies[0].descoped ?? '';
+    expect(short.length).toBeGreaterThanOrEqual(5);
+    expect(short.startsWith('cons')).toBe(true);
+  });
+
+  it('brings the full words back when the window ends', () => {
+    const session = cto();
+    session.enemies = [enemy('consectetur')];
+    session.cast('descope');
+
+    const { undescoped } = session.update(config.spells.descope.seconds * 1000);
+
+    expect(undescoped.map((state) => state.id)).toEqual([100]);
+    expect(session.enemies[0].descoped).toBeUndefined();
+  });
+
+  it('leaves demons spawned during the window alone', () => {
+    const session = cto();
+    session.enemies = [];
+    session.cast('descope');
+
+    const { spawned } = session.update(1);
+
+    expect(spawned.length).toBeGreaterThan(0);
+    expect(spawned.every((state) => state.descoped === undefined)).toBe(true);
+  });
+
+  it('uses the first word of a hell phrase', () => {
+    const session = cto();
+    session.enemies = [enemy('dolor sit amet')];
+
+    session.cast('descope');
+
+    expect(session.enemies[0].descoped).toBe('dol');
+  });
 });
