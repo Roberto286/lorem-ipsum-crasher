@@ -19,51 +19,51 @@ describe('score storage', () => {
     const count = config.scores.maxEntries + 2;
     const scores = Array.from({ length: count }, (_, index) => (((index * 3) % count) + 1) * 10);
 
-    scores.forEach((score) => saveScore('normal', 'scribe', { score, seconds: 1 }));
+    scores.forEach((score) => saveScore('normal', 'junior', { score, seconds: 1 }));
 
     const expected = [...scores].sort((a, b) => b - a).slice(0, config.scores.maxEntries);
-    expect(loadScores('normal', 'scribe').map((entry) => entry.score)).toEqual(expected);
+    expect(loadScores('normal', 'junior').map((entry) => entry.score)).toEqual(expected);
   });
 
   it('keeps a separate board per level', () => {
     stubStorage();
 
-    saveScore('easy', 'scribe', { score: 10, seconds: 2 });
+    saveScore('easy', 'junior', { score: 10, seconds: 2 });
 
-    expect(loadScores('easy', 'scribe')).toEqual([{ score: 10, seconds: 2 }]);
-    expect(loadScores('hard', 'scribe')).toEqual([]);
+    expect(loadScores('easy', 'junior')).toEqual([{ score: 10, seconds: 2 }]);
+    expect(loadScores('hard', 'junior')).toEqual([]);
   });
 
   it('keeps a separate board per class', () => {
     stubStorage();
 
-    saveScore('normal', 'iceMage', { score: 10, seconds: 2 });
+    saveScore('normal', 'devops', { score: 10, seconds: 2 });
 
-    expect(loadScores('normal', 'iceMage')).toEqual([{ score: 10, seconds: 2 }]);
-    expect(loadScores('normal', 'fireMage')).toEqual([]);
-    expect(loadScores('normal', 'scribe')).toEqual([]);
+    expect(loadScores('normal', 'devops')).toEqual([{ score: 10, seconds: 2 }]);
+    expect(loadScores('normal', 'dba')).toEqual([]);
+    expect(loadScores('normal', 'junior')).toEqual([]);
   });
 
   it('keeps zero-point runs off the board', () => {
     stubStorage();
-    saveScore('normal', 'scribe', { score: 10, seconds: 2 });
+    saveScore('normal', 'junior', { score: 10, seconds: 2 });
 
-    expect(saveScore('normal', 'scribe', { score: 0, seconds: 19 })).toEqual([
+    expect(saveScore('normal', 'junior', { score: 0, seconds: 19 })).toEqual([
       { score: 10, seconds: 2 },
     ]);
-    expect(loadScores('normal', 'scribe')).toEqual([{ score: 10, seconds: 2 }]);
+    expect(loadScores('normal', 'junior')).toEqual([{ score: 10, seconds: 2 }]);
   });
 
   it('ignores corrupt stored data', () => {
     stubStorage('not json');
 
-    expect(loadScores('normal', 'scribe')).toEqual([]);
+    expect(loadScores('normal', 'junior')).toEqual([]);
   });
 
   it('drops malformed entries', () => {
     stubStorage('[{"score":"x","seconds":1},{"score":5,"seconds":3},null]');
 
-    expect(loadScores('normal', 'scribe')).toEqual([{ score: 5, seconds: 3 }]);
+    expect(loadScores('normal', 'junior')).toEqual([{ score: 5, seconds: 3 }]);
   });
 
   it('still returns the new score when storage is unavailable', () => {
@@ -72,9 +72,9 @@ describe('score storage', () => {
     };
     vi.stubGlobal('localStorage', { getItem: blocked, setItem: blocked });
 
-    expect(saveScore('normal', 'scribe', { score: 10, seconds: 2 })).toEqual([
+    expect(saveScore('normal', 'junior', { score: 10, seconds: 2 })).toEqual([
       { score: 10, seconds: 2 },
     ]);
-    expect(loadScores('normal', 'scribe')).toEqual([]);
+    expect(loadScores('normal', 'junior')).toEqual([]);
   });
 });

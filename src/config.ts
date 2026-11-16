@@ -136,13 +136,13 @@ export const config = {
     },
   },
   defaultLevel: 'normal',
-  // Picked in the menu. Each class tints the hero sprite; white leaves the art unchanged.
+  // Picked in the menu. Developer roles; each tints the hero sprite, white leaves the art unchanged.
   classes: {
-    scribe: { tint: 0xffffff },
-    iceMage: { tint: 0x9fd8ff },
-    fireMage: { tint: 0xff9a3c },
+    junior: { tint: 0xffffff },
+    devops: { tint: 0x9fd8ff },
+    dba: { tint: 0xff9a3c },
   },
-  defaultClass: 'scribe',
+  defaultClass: 'junior',
   // v2: combo scoring changed what a score is worth, so the v1 boards are no longer comparable.
   scores: { storageKey: 'loremIpsumCrasher.scores.v2', maxEntries: 5 },
   difficulty: {
