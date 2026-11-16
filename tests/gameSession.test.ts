@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { config, type LevelKey } from '../src/config';
+import { config, type ClassKey, type LevelKey } from '../src/config';
 import { difficultyAt } from '../src/utils/difficulty';
 import { GameSession, type EnemyState } from '../src/utils/gameSession';
+import { loremWords } from '../src/utils/words';
 
 const halfWidth = 200;
 const halfHeight = 100;
-const newSession = (rng = () => 0, level: LevelKey = 'normal') =>
-  new GameSession(halfWidth, halfHeight, level, rng);
+const newSession = (rng = () => 0, level: LevelKey = 'normal', heroClass: ClassKey = 'junior') =>
+  new GameSession(halfWidth, halfHeight, level, heroClass, rng);
 // Ids start high so they never collide with enemies the session spawns itself.
 const enemy = (word: string, overrides: Partial<EnemyState> = {}): EnemyState => ({
   id: 100,
@@ -974,5 +975,112 @@ describe('spells', () => {
 
     expect(session.multiplier).toBe(3);
     expect(session.score).toBe(2 * config.pointsPerLetter * 3 * config.spells.cache.scoreScale);
+  });
+});
+
+describe('abilities', () => {
+  const { ultimate } = config.classes.devops;
+  const devops = () => newSession(() => 0, 'normal', 'devops');
+  // One enemy per word: each is typed in full before the next one spawns.
+  const perfectWord = (session: GameSession, word = 'sit') => {
+    session.enemies.push(enemy(word));
+    type(session, word);
+  };
+
+  it('charges the ultimate one step per perfect word, up to its cap', () => {
+    const session = devops();
+
+    for (let i = 0; i < ultimate.chargeWords - 1; i++) perfectWord(session);
+    expect(session.ultimateCharge).toBe(ultimate.chargeWords - 1);
+    expect(session.ultimateReady).toBe(false);
+
+    perfectWord(session);
+    perfectWord(session);
+    expect(session.ultimateCharge).toBe(ultimate.chargeWords);
+    expect(session.ultimateReady).toBe(true);
+  });
+
+  it('does not charge the ultimate on a flawed word', () => {
+    const session = devops();
+    session.enemies = [enemy('sit')];
+
+    type(session, 'z');
+    session.eraseLetter();
+    type(session, 'sit');
+
+    expect(session.ultimateCharge).toBe(0);
+  });
+
+  it('ignores the freeze command until the ultimate is charged', () => {
+    const session = devops();
+
+    const results = type(session, ultimate.command);
+
+    expect(results.every((result) => result.kind === 'typo')).toBe(true);
+    expect(session.frozen).toBe(false);
+  });
+
+  it('casts freeze when the charged devops types its command', () => {
+    const session = devops();
+    session.ultimateCharge = ultimate.chargeWords;
+
+    const results = type(session, ultimate.command);
+    const last = results[results.length - 1];
+
+    expect(results.slice(0, -1).every((result) => result.kind === 'progress')).toBe(true);
+    expect(last).toEqual({ kind: 'ability', ability: 'ultimate', cast: { spell: 'freeze' } });
+    expect(session.frozen).toBe(true);
+    expect(session.ultimateCharge).toBe(0);
+    expect(session.typed).toBe('');
+  });
+
+  it('keeps typing a command as progress even when no demon matches it', () => {
+    const session = devops();
+    session.ultimateCharge = ultimate.chargeWords;
+    session.enemies = [enemy('sit')];
+    const partial = ultimate.command.slice(0, 3);
+
+    const results = type(session, partial);
+
+    expect(results.every((result) => result.kind === 'progress')).toBe(true);
+    expect(session.typed).toBe(partial);
+  });
+
+  it('leaves the score, the combo and the streak alone when a command is typed', () => {
+    const session = devops();
+    session.ultimateCharge = ultimate.chargeWords;
+    session.score = 50;
+    session.multiplier = 3;
+    session.streak = 2;
+
+    type(session, ultimate.command);
+
+    expect(session.score).toBe(50);
+    expect(session.multiplier).toBe(3);
+    expect(session.streak).toBe(2);
+  });
+
+  it('gives a role without abilities no commands', () => {
+    const session = newSession(() => 0, 'normal', 'junior');
+    session.ultimateCharge = ultimate.chargeWords;
+
+    const results = type(session, ultimate.command);
+
+    expect(session.readyAbilities).toEqual([]);
+    expect(results.every((result) => result.kind === 'typo')).toBe(true);
+    expect(session.frozen).toBe(false);
+  });
+
+  it('never lets a command share a prefix with a lorem word', () => {
+    const roles: { tint: number; skill?: { command: string }; ultimate?: { command: string } }[] =
+      Object.values(config.classes);
+    const commands = roles
+      .flatMap((role) => [role.skill?.command, role.ultimate?.command])
+      .filter((command) => command !== undefined);
+
+    expect(commands).toContain(ultimate.command);
+    for (const command of commands) {
+      for (const word of loremWords) expect(sharesPrefix(command, word)).toBe(false);
+    }
   });
 });

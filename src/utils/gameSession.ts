@@ -1,4 +1,4 @@
-import { config, type EnemyType, type LevelKey, type SpellKey } from '../config';
+import { config, type ClassKey, type EnemyType, type LevelKey, type SpellKey } from '../config';
 import { difficultyAt } from './difficulty';
 import { pickWord } from './words';
 
@@ -36,7 +36,9 @@ export type TypeResult =
   // A word was completed but the enemy has more.
   | { kind: 'word'; enemy: EnemyState; word: string }
   // It was the last one. cast: the spell of a carrier, already applied.
-  | { kind: 'kill'; enemy: EnemyState; word: string; cast?: Cast };
+  | { kind: 'kill'; enemy: EnemyState; word: string; cast?: Cast }
+  // A ready ability's command was typed: its spell is cast and nothing else changes.
+  | { kind: 'ability'; ability: 'skill' | 'ultimate'; cast: Cast };
 
 export interface UpdateResult {
   spawned: EnemyState[];
@@ -44,6 +46,23 @@ export interface UpdateResult {
   // Demons the firewall absorbed: they are in reached too.
   blocked: number;
 }
+
+/** An ability whose command can be typed now: typing the command fires it. */
+export interface ReadyAbility {
+  ability: 'skill' | 'ultimate';
+  command: string;
+  spell: SpellKey;
+}
+
+/** The abilities a role may have: junior has none, the others have one or both. */
+interface RoleAbilities {
+  // Every role has a tint: it keeps junior's `{ tint }` from being a weak, all-optional type.
+  tint: number;
+  skill?: { command: string; spell: SpellKey; cooldownSeconds: number };
+  ultimate?: { command: string; spell: SpellKey; chargeWords: number };
+}
+
+const abilitiesOf = (heroClass: ClassKey): RoleAbilities => config.classes[heroClass];
 
 /** The spells a demon can carry: the keys of config.spells that have a weight. */
 export type CarriedSpell = {
@@ -82,6 +101,10 @@ export class GameSession {
   private frozenMs = 0;
   // Milliseconds left of a cache: while it lasts a word's points are scaled up.
   private cacheMs = 0;
+  /** Milliseconds until the skill is ready again; 0 when ready. */
+  skillCooldownMs = 0;
+  /** Perfect words toward the ultimate, up to its chargeWords. */
+  ultimateCharge = 0;
   lives: number = config.player.lives;
   elapsedMs = 0;
   private untilSpawnMs = 0;
@@ -92,6 +115,7 @@ export class GameSession {
     private readonly halfWidth: number,
     private readonly halfHeight: number,
     private readonly level: LevelKey,
+    private readonly heroClass: ClassKey = config.defaultClass,
     private readonly rng: () => number = Math.random,
   ) {}
 
@@ -109,9 +133,47 @@ export class GameSession {
     return this.matches[0];
   }
 
+  /** The skill can fire: a role without one never has it ready. */
+  get skillReady(): boolean {
+    return abilitiesOf(this.heroClass).skill !== undefined && this.skillCooldownMs <= 0;
+  }
+
+  /** The ultimate is fully charged. False for a role without one. */
+  get ultimateReady(): boolean {
+    const { ultimate } = abilitiesOf(this.heroClass);
+    return ultimate !== undefined && this.ultimateCharge >= ultimate.chargeWords;
+  }
+
+  /** The abilities that can be used now, each with the command that fires it. */
+  get readyAbilities(): ReadyAbility[] {
+    const { skill, ultimate } = abilitiesOf(this.heroClass);
+    const ready: ReadyAbility[] = [];
+    if (skill && this.skillReady) {
+      ready.push({ ability: 'skill', command: skill.command, spell: skill.spell });
+    }
+    if (ultimate && this.ultimateReady) {
+      ready.push({ ability: 'ultimate', command: ultimate.command, spell: ultimate.spell });
+    }
+    return ready;
+  }
+
+  /** The ultimate's charge in percent; undefined for a role without one. */
+  get ultimatePercent(): number | undefined {
+    const { ultimate } = abilitiesOf(this.heroClass);
+    if (!ultimate) return undefined;
+    return Math.floor((this.ultimateCharge * 100) / ultimate.chargeWords);
+  }
+
+  /** The typed buffer starts a ready command: it is not a typo, whatever the demons match. */
+  get typingCommand(): boolean {
+    const { typed } = this;
+    return typed !== '' && this.readyAbilities.some((ability) => ability.command.startsWith(typed));
+  }
+
   update(deltaMs: number): UpdateResult {
     this.elapsedMs += deltaMs;
     this.cacheMs = Math.max(0, this.cacheMs - deltaMs);
+    this.skillCooldownMs = Math.max(0, this.skillCooldownMs - deltaMs);
     const { reached, blocked } = this.advanceEnemies(deltaMs);
     const spawned = [...this.spawnIfDue(deltaMs), ...this.spawnTankIfDue(deltaMs)];
     return { spawned, reached, blocked };
@@ -121,8 +183,15 @@ export class GameSession {
     // A space only means something inside a phrase: between words it is habit, not a typo.
     if (letter === ' ' && this.typed === '') return { kind: 'progress' };
     const typed = this.typed + letter;
+    const ready = this.readyAbilities;
+    const fired = ready.find((ability) => ability.command === typed);
+    if (fired) {
+      this.typed = '';
+      return { kind: 'ability', ability: fired.ability, cast: this.fire(fired) };
+    }
     const matches = this.matching(typed);
-    if (matches.length === 0) return this.mistype(typed);
+    const commandStarted = ready.some((ability) => ability.command.startsWith(typed));
+    if (matches.length === 0 && !commandStarted) return this.mistype(typed);
 
     const completed = matches.find((enemy) => enemy.words[0] === typed);
     if (!completed) {
@@ -186,6 +255,14 @@ export class GameSession {
     return { spell: 'patch', healed };
   }
 
+  /** Spends the ability that fired: its cooldown starts or its charge empties. */
+  private fire(ready: ReadyAbility): Cast {
+    const { skill } = abilitiesOf(this.heroClass);
+    if (ready.ability === 'ultimate') this.ultimateCharge = 0;
+    else if (skill) this.skillCooldownMs = skill.cooldownSeconds * 1000;
+    return this.cast(ready.spell);
+  }
+
   /** Removes the last typed letter; strict levels have nothing to erase. */
   eraseLetter(): void {
     if (this.erasableTypos) this.typed = this.typed.slice(0, -1);
@@ -207,13 +284,21 @@ export class GameSession {
     return { kind: 'error', enemy };
   }
 
-  /** Completes a word: a perfect one (no wrong letter since the last word) advances the streak. */
+  /**
+   * Completes a word: a perfect one (no wrong letter since the last word) advances the streak
+   * and charges the ultimate.
+   */
   private countWord(): void {
-    if (!this.wordFlawed && this.multiplier < config.combo.maxMultiplier) {
-      this.streak += 1;
-      if (this.streak >= config.combo.perfectWordsPerLevel) {
-        this.multiplier += 1;
-        this.streak = 0;
+    if (!this.wordFlawed) {
+      // The ultimate charges on every perfect word, even at the multiplier cap.
+      const { ultimate } = abilitiesOf(this.heroClass);
+      if (ultimate) this.ultimateCharge = Math.min(ultimate.chargeWords, this.ultimateCharge + 1);
+      if (this.multiplier < config.combo.maxMultiplier) {
+        this.streak += 1;
+        if (this.streak >= config.combo.perfectWordsPerLevel) {
+          this.multiplier += 1;
+          this.streak = 0;
+        }
       }
     }
     this.wordFlawed = false;

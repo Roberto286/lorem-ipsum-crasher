@@ -40,6 +40,7 @@ const en = {
   soundOn: 'SOUND ON',
   soundOff: 'SOUND OFF',
   moreWords: '+{count}',
+  ultimateCharge: '{percent}%',
 };
 
 export type StringKey = keyof typeof en;

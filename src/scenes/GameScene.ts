@@ -20,6 +20,7 @@ export class GameScene extends Phaser.Scene {
   private typedBox!: Phaser.GameObjects.Rectangle;
   private typedText!: Phaser.GameObjects.Text;
   private drops!: Phaser.GameObjects.Text;
+  private abilities!: Phaser.GameObjects.Text;
   // The play area is the band between the HUD strip and the bottom panel.
   private playTop = 0;
   private playHeight = 0;
@@ -40,13 +41,14 @@ export class GameScene extends Phaser.Scene {
     this.enemies.clear();
     this.paused = false;
     this.resumeTimer = undefined;
+    const heroClass: ClassKey = this.registry.get('heroClass');
     this.session = new GameSession(
       width / 2,
       this.playHeight / 2 + config.enemy.spawnBehindPanels,
       this.registry.get('level'),
+      heroClass,
     );
     this.add.image(0, 0, 'backdrop').setOrigin(0).setDepth(config.depths.backdrop);
-    const heroClass: ClassKey = this.registry.get('heroClass');
     this.player = new Player(
       this,
       width / 2,
@@ -135,6 +137,11 @@ export class GameScene extends Phaser.Scene {
     this.drops = addText(this, width - 12, boxCenterY, '', {
       color: config.colors.accent,
     }).setOrigin(1, 0.5);
+    // The free left part of the box: ready commands, or the ultimate's charge while it builds.
+    this.abilities = addText(this, 12, boxCenterY, '', { color: config.colors.dim }).setOrigin(
+      0,
+      0.5,
+    );
   }
 
   private handleLetter(letter: string): void {
@@ -164,6 +171,9 @@ export class GameScene extends Phaser.Scene {
       this.time.delayedCall(config.typedBox.errorFlashMs, () =>
         this.typedBox.setFillStyle(config.colors.panel),
       );
+    } else if (result.kind === 'ability') {
+      this.showCast(result.cast);
+      this.sound.play('kill');
     }
   }
 
@@ -222,10 +232,24 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drawHud(): void {
-    const { score, multiplier, lives, shield, forgiven, cached, elapsedMs, typed, target } =
-      this.session;
+    const {
+      score,
+      multiplier,
+      lives,
+      shield,
+      forgiven,
+      cached,
+      elapsedMs,
+      typed,
+      target,
+      typingCommand,
+      readyAbilities,
+      ultimateReady,
+      ultimatePercent,
+    } = this.session;
     // Red while the buffer holds a typo: nothing can be killed until it is erased.
-    const typedColor = typed === '' || target ? config.colors.accent : config.colors.enraged;
+    const typedColor =
+      typed === '' || target || typingCommand ? config.colors.accent : config.colors.enraged;
     const status = [
       t('score', { value: score }),
       t('lives', { value: lives }),
@@ -239,6 +263,14 @@ export class GameScene extends Phaser.Scene {
       ...(cached ? [t('cache')] : []),
     ];
     this.drops.setText(drops.join(' '));
+    // Ready commands, then the ultimate's charge while it builds up.
+    const labels = readyAbilities.map((ready) => ready.command);
+    if (ultimatePercent !== undefined && !ultimateReady) {
+      labels.push(t('ultimateCharge', { percent: ultimatePercent }));
+    }
+    this.abilities.setText(labels.join(' '));
+    const abilitiesColor = readyAbilities.length > 0 ? config.colors.accent : config.colors.dim;
+    if (this.abilities.style.color !== abilitiesColor) this.abilities.setColor(abilitiesColor);
     this.typedText.setText(typed);
     if (this.typedText.style.color !== typedColor) this.typedText.setColor(typedColor);
   }

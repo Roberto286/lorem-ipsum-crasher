@@ -156,10 +156,16 @@ export const config = {
   },
   defaultLevel: 'normal',
   // Picked in the menu, in this order. Developer roles; each tints the hero sprite,
-  // white leaves the art unchanged.
+  // white leaves the art unchanged. A role may have a skill (command, spell, cooldownSeconds:
+  // ready again that long after use) and an ultimate (command, spell, chargeWords: perfect words
+  // that charge it, emptied on use). Commands are typed while ready and must not share a prefix
+  // with any lorem word.
   classes: {
     junior: { tint: 0xffffff },
-    devops: { tint: 0x9fd8ff },
+    devops: {
+      tint: 0x9fd8ff,
+      ultimate: { command: 'freeze', spell: 'freeze', chargeWords: 20 },
+    },
     dba: { tint: 0xff9a3c },
     cto: { tint: 0xb98cff },
   },

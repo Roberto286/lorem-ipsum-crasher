@@ -16,6 +16,7 @@ The core rule: **game rules are render-free, scenes only draw and forward input.
   `firewall` is carried like `patch`. Casting it sets `GameSession.shield` to `config.spells.firewall.hits`; `advanceEnemies` lets the shield absorb whole demons that reach the hero, one per point, in `reached` order. An absorbed demon deals no damage and keeps the combo; a second firewall does not stack.
   `linter` is carried like `patch`. Casting it sets `GameSession.forgiven` to `config.spells.linter.typos`; `recordWrongLetter` spends one per wrong letter and returns early, so the combo, streak and the word's perfect flag stay as they were. Erasable and hell buffer rules still apply. A second linter does not stack.
   `cache` is carried like `patch`. Casting it sets `GameSession.cacheMs` to `config.spells.cache.seconds` times 1000 and `update()` counts it down, whether or not a freeze is on. While `cached`, a completed word's points are multiplied by `scoreScale`; combo and streak are untouched. A second cache restarts the timer.
+- Role abilities: a role's `skill` and `ultimate` in `config.classes` fire when their typed command is typed while ready (`readyAbilities`). Commands never share a prefix with lorem words, so typing one never clashes with a demon. The skill runs a `skillCooldownMs` cooldown; the ultimate charges one step per perfect word (`ultimateCharge`, up to `chargeWords`) and empties when used. Typing a command returns `kind: 'ability'` and changes no score, combo or flaw state. The devops ultimate is `freeze`.
 - HUD: active drops (`FW`, `LINT`, `CACHE`) render right-aligned in the typed box, not the top strip; `typedBox.maxLetters` is 31 so the centred buffer clears them.
 - `src/scenes/GameScene.ts` — renders `GameSession` state, converts polar positions to screen coordinates, plays sounds and tweens.
 
@@ -29,6 +30,7 @@ listenForKeys (utils/keyboard.ts)
       'typo'          levels with erasableTypos: wrong letter stays in the buffer, Backspace erases it
       'error'         hell only: buffer cleared, target speeds up (config.enemy.typoSpeedBoost), enrages
       'word' | 'kill' hurlWord (entities/wordProjectile.ts) → onHit → Enemy.setWords / Enemy.vanish
+      'ability'       ready role command typed: its spell is cast, buffer cleared, no score change
 ```
 
 Frame flow:
@@ -95,7 +97,7 @@ Before finishing a change, run `npm run lint`, `npm test` and `npx tsc --noEmit`
 - **All tunables live in `src/config.ts`**, one `as const` object. Do not hardcode numbers, colors, depths or timings in scenes; add a key to `config` with a `//` comment explaining it. Types such as `LevelKey` are derived from it (`keyof typeof config.levels`).
 - **Difficulty is data**: `Curve` keyframes (`[seconds, value]`) in `config.difficulty`, sampled by `sampleCurve` / `difficultyAt(seconds, level)` in `src/utils/difficulty.ts`.
 - **Results as discriminated unions**, not exceptions: `TypeResult` switches on `kind`. Nothing in the codebase throws. The only `try/catch` is the silent `localStorage` fallback in `scoreStorage.ts`.
-- **Dependency injection through defaulted parameters**: `GameSession(halfWidth, halfHeight, level, rng = Math.random)`, `pickWord(maxLength, activeWords, rng)`. Tests pass deterministic RNGs. Use `private readonly` constructor parameter properties.
+- **Dependency injection through defaulted parameters**: `GameSession(halfWidth, halfHeight, level, heroClass = config.defaultClass, rng = Math.random)`, `pickWord(maxLength, activeWords, rng)`. Tests pass deterministic RNGs. Use `private readonly` constructor parameter properties.
 - **No `async`/`await`**: timing uses Phaser tweens, `time.delayedCall` and `onComplete` callbacks.
 - **Scene fields** use `!` definite assignment and are (re)initialized in `create()`, because Phaser reuses scene instances across restarts.
 - **Text and buttons** go through `addText` / `addButton` in `src/utils/ui.ts`, and every user-visible string through `t(key, values)` in `src/utils/i18n.ts` (add the key to the `en` dictionary; `{name}` placeholders).
