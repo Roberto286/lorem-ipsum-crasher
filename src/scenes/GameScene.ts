@@ -309,7 +309,11 @@ export class GameScene extends Phaser.Scene {
     this.abilities.setText(lines.join('\n'));
     const abilitiesColor = readyAbilities.length > 0 ? config.colors.accent : config.colors.dim;
     if (this.abilities.style.color !== abilitiesColor) this.abilities.setColor(abilitiesColor);
-    this.typedText.setText(typed);
+    const typedText =
+      typed.length <= config.typedBox.visibleLetters
+        ? typed
+        : '…' + typed.slice(-(config.typedBox.visibleLetters - 1));
+    this.typedText.setText(typedText);
     if (this.typedText.style.color !== typedColor) this.typedText.setColor(typedColor);
   }
 
