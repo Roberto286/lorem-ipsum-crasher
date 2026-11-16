@@ -21,7 +21,10 @@ export interface EnemyState {
 /** What a spell did, for the scene to show. */
 export type Cast =
   // healed: lives actually gained, 0 when they were full.
-  { spell: 'patch'; healed: number } | { spell: 'freeze' } | { spell: 'firewall' };
+  | { spell: 'patch'; healed: number }
+  | { spell: 'freeze' }
+  | { spell: 'firewall' }
+  | { spell: 'linter' };
 
 export type TypeResult =
   | { kind: 'progress' }
@@ -70,6 +73,8 @@ export class GameSession {
   streak = 0;
   /** Demons the firewall still absorbs, one per point. */
   shield = 0;
+  /** Wrong letters the linter still forgives, one per point. */
+  forgiven = 0;
   // A wrong letter was typed since the last completed word, so that word cannot be perfect.
   private wordFlawed = false;
   // Milliseconds left of a freeze: while it lasts no demon moves.
@@ -154,6 +159,10 @@ export class GameSession {
         // A second firewall does not stack: it sets the shield back to hits.
         this.shield = config.spells.firewall.hits;
         return { spell: 'firewall' };
+      case 'linter':
+        // A second linter does not stack: it sets the forgiven count back to typos.
+        this.forgiven = config.spells.linter.typos;
+        return { spell: 'linter' };
     }
   }
 
@@ -198,6 +207,11 @@ export class GameSession {
 
   /** A wrong letter: erasable levels drop one level once per word, hell breaks the combo to x1. */
   private recordWrongLetter(): void {
+    // A forgiven typo keeps the combo and leaves wordFlawed as it was.
+    if (this.forgiven > 0) {
+      this.forgiven -= 1;
+      return;
+    }
     if (!this.erasableTypos) this.multiplier = 1;
     else if (!this.wordFlawed) this.multiplier = Math.max(1, this.multiplier - 1);
     this.wordFlawed = true;

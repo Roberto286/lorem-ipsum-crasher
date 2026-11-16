@@ -879,4 +879,57 @@ describe('spells', () => {
     });
     expect(session.shield).toBe(config.spells.firewall.hits);
   });
+
+  it('keeps the combo through a typo forgiven by the linter', () => {
+    const session = newSession();
+    session.multiplier = 3;
+    session.streak = 2;
+    session.cast('linter');
+
+    type(session, 'x');
+
+    expect(session.multiplier).toBe(3);
+    expect(session.streak).toBe(2);
+    expect(session.forgiven).toBe(0);
+  });
+
+  it('still counts the word as perfect after a forgiven typo', () => {
+    const session = newSession();
+    session.enemies = [enemy('ab', { spell: 'firewall' })];
+    session.cast('linter');
+
+    type(session, 'ax');
+    session.eraseLetter();
+
+    expect(type(session, 'b').at(-1)).toEqual({
+      kind: 'kill',
+      enemy: expect.objectContaining({ id: 100 }),
+      word: 'ab',
+      cast: { spell: 'firewall' },
+    });
+    expect(session.shield).toBe(config.spells.firewall.hits);
+  });
+
+  it('forgives only one typo', () => {
+    const session = newSession();
+    session.multiplier = 3;
+    session.cast('linter');
+
+    type(session, 'x');
+    expect(session.multiplier).toBe(3);
+
+    type(session, 'y');
+    expect(session.multiplier).toBe(2);
+  });
+
+  it('still clears the buffer on hell after a forgiven typo', () => {
+    const session = newSession(() => 0, 'hell');
+    const target = enemy('sit', { id: 100, speed: 10 });
+    session.enemies.push(target);
+    session.cast('linter');
+
+    expect(type(session, 'sx').at(-1)).toEqual({ kind: 'error', enemy: target });
+    expect(session.typed).toBe('');
+    expect(target.speed).toBe(10 * config.enemy.typoSpeedBoost);
+  });
 });

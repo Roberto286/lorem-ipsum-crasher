@@ -29,6 +29,7 @@ const en = {
   combo: 'x{value}',
   lives: 'LIVES {value}',
   shield: 'FW',
+  linter: 'LINT',
   time: 'TIME {value}s',
   highScores: 'HIGH SCORES',
   highScoreRow: '{rank}. {score}  {seconds}s',
