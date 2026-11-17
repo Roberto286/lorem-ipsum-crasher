@@ -12,7 +12,7 @@ Desktop browsers only. Phones and tablets get a notice instead of the game.
 - A wrong letter drops the multiplier one level, once per word, and breaks the streak. On hell it resets the multiplier to x1.
 - Backspace erases a wrong letter on easy, normal and hard. On hell a wrong letter clears the buffer and speeds up the demon you were typing at, which turns its label red.
 - Escape pauses. Pausing also happens when the window loses focus.
-- Menu: arrow keys choose level and class, Enter starts. Press H in the menu for the in-game guide. The intro can be skipped with Escape.
+- Menu: arrow keys choose level and role, Enter starts. Press H in the menu for the in-game guide, which has a page per role. The intro can be skipped with Escape.
 
 ## Levels
 
