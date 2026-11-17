@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Synthesizes the enemy sound effects into src/assets/audio, next to the existing effects.
+"""Synthesizes the sound effects into src/assets/audio, next to the existing effects.
 
 Regenerate from the repository root (Python 3 standard library only):
 
@@ -214,10 +214,71 @@ def screech_kamikaze():
     return [(s + 0.2 * h) * e for s, h, e in zip(tone, hiss, env)]
 
 
+def error_blip():
+    """0.08 s dry low blip: a triangle and saw pair falls 260 to 170 Hz and stops at once."""
+    n = samples(0.08)
+    t = [i / RATE for i in range(n)]
+    pitch = glide(260, 170, n)
+    tone = [0.6 * a + 0.4 * b for a, b in zip(oscillate(pitch, triangle), oscillate(pitch, saw))]
+    amp = [min(1.0, x / 0.003) * math.exp(-x * 35) for x in t]
+    return [s * a for s, a in zip(tone, amp)]
+
+
+def game_over():
+    """1.4 s end-of-run motif: three falling notes, then a longer final note. Each is a triangle
+    over a detuned saw through a low-pass, and restarts with a short attack and decays."""
+    freqs, env = [], []
+    for f, d in ((392, 0.22), (330, 0.22), (262, 0.22), (196, 0.74)):  # G4 E4 C4 G3
+        m = samples(d)
+        freqs += [f] * m
+        env += [min(1.0, i / samples(0.005)) * math.exp(-i / RATE * 4) for i in range(m)]
+    n = len(freqs)
+    voice = [
+        0.6 * a + 0.4 * b
+        for a, b in zip(oscillate(freqs, triangle), oscillate([f * 1.005 for f in freqs], saw))
+    ]
+    tone = biquad(voice, 'lp', [1800] * n, 0.7)
+    return [s * e for s, e in zip(tone, env)]
+
+
+def hurt_hit():
+    """0.25 s punchy blow on the hero: a sine thump glides 170 to 60 Hz under a saw through a
+    low-pass that closes, plus a short noise crack."""
+    n = samples(0.25)
+    t = [i / RATE for i in range(n)]
+    pitch = glide(170, 60, n)
+    body = oscillate(pitch, sine)
+    grit = biquad(oscillate(pitch, saw), 'lp', [250 + 1200 * math.exp(-x * 15) for x in t], 1.0)
+    amp = [min(1.0, x / 0.002) * math.exp(-x * 11) for x in t]
+    out = [(0.6 * b + 0.4 * math.tanh(2 * g)) * a for b, g, a in zip(body, grit, amp)]
+    crack_n = samples(0.015)
+    crack = biquad(noise(random.Random(13), crack_n), 'bp', [1200] * crack_n, 0.8)
+    overlay(out, [0.4 * s * math.exp(-i / RATE * 200) for i, s in enumerate(crack)])
+    return out
+
+
+def kill_hit():
+    """0.12 s bright hit: a sine and triangle sweep up 900 to 1800 Hz over a band-passed click."""
+    n = samples(0.12)
+    t = [i / RATE for i in range(n)]
+    pitch = glide(900, 1800, n)
+    tone = [0.7 * a + 0.3 * b for a, b in zip(oscillate(pitch, sine), oscillate(pitch, triangle))]
+    amp = [min(1.0, x / 0.002) * math.exp(-x * 28) for x in t]
+    out = [s * a for s, a in zip(tone, amp)]
+    click_n = samples(0.01)
+    click = biquad(noise(random.Random(5), click_n), 'bp', [3000] * click_n, 1.2)
+    overlay(out, [0.5 * s * math.exp(-i / RATE * 400) for i, s in enumerate(click)])
+    return out
+
+
 SOUNDS = {
     'deathgrunt': death_grunt,
     'deathkamikaze': death_kamikaze,
     'deathtank': death_tank,
+    'error': error_blip,
+    'gameover': game_over,
+    'hurt': hurt_hit,
+    'kill': kill_hit,
     'laughtank': laugh_tank,
     'screechkamikaze': screech_kamikaze,
 }

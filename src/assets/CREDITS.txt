@@ -1,4 +1,4 @@
-Enemy sounds (audio/deathgrunt.wav, audio/deathkamikaze.wav, audio/deathtank.wav, audio/laughtank.wav, audio/screechkamikaze.wav)
+Sound effects (audio/deathgrunt.wav, audio/deathkamikaze.wav, audio/deathtank.wav, audio/error.wav, audio/gameover.wav, audio/hurt.wav, audio/kill.wav, audio/laughtank.wav, audio/screechkamikaze.wav)
 Source: synthesised by scripts/generate_sfx.py from oscillators, seeded noise and filters.
 License: generated in-project; no recordings or third-party material.
 Changes: none; the script output is the file.
@@ -6,10 +6,6 @@ Changes: none; the script output is the file.
 Music (audio/music.ogg, audio/music.mp3)
 Source: synthesised by scripts/generate_music.py (Python stdlib), encoded with ffmpeg.
 License: generated in-project; no recordings or third-party material.
-
-Placeholder sounds (audio/error.wav, audio/hurt.wav, audio/kill.wav, audio/gameover.wav)
-Added as placeholders in commit 655f3b4. No generator script or source is recorded in the repository.
-License: unknown. Replace them or record their source before release.
 
 Third-party material
 - backgrounds/arena.jpg: see backgrounds/CREDITS.txt
