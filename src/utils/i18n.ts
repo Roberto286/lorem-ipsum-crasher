@@ -88,7 +88,7 @@ const en = {
   passive: 'PASSIVE',
   dropsHow:
     'Banish a carrier cleanly, last word typed with no wrong letter, to get its drop. ' +
-    "Its label wears the drop's color; a tank keeps its own and gets a frame.",
+    "Its label wears the drop's color and name; a tank keeps its own color and gets a frame.",
   grunt: 'GRUNT',
   kamikaze: 'KAMIKAZE',
   ghost: 'GHOST',

@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { config } from '../config';
+import { dropNames } from '../utils/drops';
 import type { EnemyState } from '../utils/gameSession';
 import { t } from '../utils/i18n';
 import type { LabelBox } from '../utils/labelLayout';
@@ -21,6 +22,8 @@ export class Enemy {
   private readonly typedLetters: Phaser.GameObjects.Text;
   /** Around the label of a tank that carries a spell. */
   private readonly frame?: Phaser.GameObjects.Rectangle;
+  /** Over the label of a carrier: its drop's name on the drop's colour. */
+  private readonly tag?: Phaser.GameObjects.Text;
   private frozen = false;
   private throttled = false;
   private graced = false;
@@ -41,14 +44,14 @@ export class Enemy {
     this.sprite.setFlipX(Math.cos(state.angle) > 0);
     const padding = { x: 2, y: 2 };
     const spellColor = state.spell && config.spells[state.spell].color;
+    const spellRgba =
+      spellColor === undefined ? undefined : Phaser.Display.Color.IntegerToColor(spellColor).rgba;
     // A carrier shows its spell behind its words. The tank keeps its own background, the mark
     // of the miniboss: its spell frames the label instead.
     const framed = state.type === 'tank';
     this.label = addText(scene, 0, 0, '', {
       backgroundColor:
-        spellColor === undefined || framed
-          ? config.colors.labelBackground[state.type]
-          : Phaser.Display.Color.IntegerToColor(spellColor).rgba,
+        spellRgba === undefined || framed ? config.colors.labelBackground[state.type] : spellRgba,
       padding,
     })
       .setOrigin(0.5, 1)
@@ -60,6 +63,15 @@ export class Enemy {
       this.frame = scene.add
         .rectangle(0, 0, 0, 0)
         .setStrokeStyle(1, spellColor)
+        .setDepth(config.depths.enemyLabel);
+    }
+    // Every carrier names its drop, so a tank or a ghost's ??? label still reads as one.
+    if (state.spell && spellRgba) {
+      this.tag = addText(scene, 0, 0, t(dropNames[state.spell]), {
+        backgroundColor: spellRgba,
+        padding,
+      })
+        .setOrigin(0.5, 1)
         .setDepth(config.depths.enemyLabel);
     }
     // A hidden word shows dim: the label keeps its background, so a carrier's drop colour shows.
@@ -111,15 +123,16 @@ export class Enemy {
     return {
       x,
       bottom: y - this.sprite.height / 2 - config.enemy.labelGap,
-      width: this.label.width,
-      height: this.label.height,
+      width: Math.max(this.label.width, this.tag?.width ?? 0),
+      height: this.label.height + (this.tag?.height ?? 0),
     };
   }
 
-  /** Puts the sprite at (x, y) and the label on the box that layoutLabels gave it. */
+  /** Puts the sprite at (x, y), the label on the bottom of the box that layoutLabels gave it. */
   moveTo(x: number, y: number, label: LabelBox): void {
     this.sprite.setPosition(x, y);
     this.label.setPosition(label.x, label.bottom);
+    this.tag?.setPosition(label.x, this.label.y - this.label.height);
     this.typedLetters.setPosition(this.label.x, this.label.y);
     // The label shrinks as its words go, so the frame is fitted to it every time.
     this.frame
@@ -194,7 +207,9 @@ export class Enemy {
   }
 
   private get parts(): Phaser.GameObjects.GameObject[] {
-    const parts = [this.sprite, this.label, this.typedLetters];
-    return this.frame ? [...parts, this.frame] : parts;
+    const parts: Phaser.GameObjects.GameObject[] = [this.sprite, this.label, this.typedLetters];
+    if (this.frame) parts.push(this.frame);
+    if (this.tag) parts.push(this.tag);
+    return parts;
   }
 }

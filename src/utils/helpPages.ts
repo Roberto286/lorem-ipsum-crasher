@@ -1,4 +1,5 @@
 import { config, type ClassKey, type EnemyType, type LevelKey, type SpellKey } from '../config';
+import { dropNames } from './drops';
 import type { CarriedSpell, RoleAbilities } from './gameSession';
 import { t, type StringKey } from './i18n';
 
@@ -17,13 +18,6 @@ export interface HelpPage {
 const levelKeys = Object.keys(config.levels) as LevelKey[];
 const classKeys = Object.keys(config.classes) as ClassKey[];
 const enemyKeys = Object.keys(config.enemyTypes) as EnemyType[];
-const dropNames: Record<CarriedSpell, StringKey> = {
-  patch: 'dropPatch',
-  firewall: 'dropFirewall',
-  linter: 'dropLinter',
-  cache: 'dropCache',
-  coffee: 'dropCoffee',
-};
 const dropKeys = Object.keys(dropNames) as CarriedSpell[];
 
 const spellKeys: Record<SpellKey, StringKey> = {
