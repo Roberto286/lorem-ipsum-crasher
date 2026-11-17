@@ -6,7 +6,7 @@ import { t, type StringKey } from './i18n';
 export interface HelpBlock {
   heading?: string;
   text: string;
-  icon?: { sprite: string; tint?: number; alpha?: number } | { color: number };
+  icon?: { sprite: string; alpha?: number } | { color: number };
 }
 
 export interface HelpPage {
@@ -138,10 +138,9 @@ function demonsPage(): HelpPage {
       return {
         heading: t(type),
         text: demonText(type),
-        // The ghost wears the chort sheet, so its icon needs its tint and see-through look.
+        // The ghost is a little see-through, in the icon too.
         icon: {
           sprite: rules.sprite,
-          tint: 'tint' in rules ? rules.tint : undefined,
           alpha: 'alpha' in rules ? rules.alpha : undefined,
         },
       };

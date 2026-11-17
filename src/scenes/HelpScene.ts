@@ -75,7 +75,6 @@ export class HelpScene extends Phaser.Scene {
           .setOrigin(0.5, 0)
           .play(icon.sprite)
           .setAlpha(icon.alpha ?? 1);
-        if (icon.tint !== undefined) sprite.setTint(icon.tint);
         this.body.push(sprite);
         blockHeight = Math.max(blockHeight, sprite.height);
       } else if (icon) {

@@ -27,8 +27,6 @@ export class Enemy {
   private slowed = false;
   // Whether the label shows the placeholder instead of the word: only a ghost does, until revealed.
   private hiddenShown: boolean;
-  // The sprite colour of a ghost; other demons keep the art as it is.
-  private readonly baseTint?: number;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -38,7 +36,6 @@ export class Enemy {
     const { sprite } = typeConfig;
     this.sprite = scene.add.sprite(0, 0, sprite).play(sprite).setDepth(config.depths.enemy);
     if ('alpha' in typeConfig) this.sprite.setAlpha(typeConfig.alpha);
-    if ('tint' in typeConfig) this.baseTint = typeConfig.tint;
     this.hiddenShown = state.hidden === true;
     // The art faces right: flip the demons that walk in from the right.
     this.sprite.setFlipX(Math.cos(state.angle) > 0);
@@ -174,12 +171,11 @@ export class Enemy {
     this.sprite.anims.timeScale = Math.min(...factors);
   }
 
-  /** Freeze tint wins over grace, which wins over slowed, which wins over the ghost's own. */
+  /** Freeze tint wins over grace, which wins over slowed. */
   private refreshTint(): void {
     if (this.frozen) this.sprite.setTint(config.spells.freeze.tint);
     else if (this.graced) this.sprite.setTint(config.classes.junior.passive.tint);
     else if (this.slowed) this.sprite.setTint(config.classes.devops.passive.tint);
-    else if (this.baseTint !== undefined) this.sprite.setTint(this.baseTint);
     else this.sprite.clearTint();
   }
 

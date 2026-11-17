@@ -30,6 +30,7 @@ export const config = {
     player: { frameWidth: 20, frameHeight: 28 },
     imp: { frameWidth: 16, frameHeight: 16 },
     chort: { frameWidth: 16, frameHeight: 23 },
+    ghost: { frameWidth: 16, frameHeight: 16 },
     bigDemon: { frameWidth: 32, frameHeight: 36 },
   },
   animationFps: 8,
@@ -62,7 +63,7 @@ export const config = {
   // damage: lives lost when the demon reaches the hero.
   // deathSound: sound key played when the demon dies; one effect per type.
   // spawnSound: optional sound key played once when a demon of that type appears.
-  // alpha, tint: optional sprite opacity and colour of a ghost, which has no sheet of its own.
+  // alpha: optional sprite opacity; the ghost is a little see-through.
   enemyTypes: {
     grunt: { sprite: 'chort', speedScale: 1, maxSpeed: 80, damage: 1, deathSound: 'deathGrunt' },
     // Carries one word of up to maxWordLength letters on every level and enters from the sides
@@ -85,9 +86,8 @@ export const config = {
     // takes about 1.1 s, so about 1.4 s is left to read the word and start. A hell typo
     // speeds the demon up and shortens that.
     ghost: {
-      sprite: 'chort',
-      alpha: 0.7,
-      tint: 0x9fffc0,
+      sprite: 'ghost',
+      alpha: 0.85,
       speedScale: 1,
       maxSpeed: 35,
       damage: 1,

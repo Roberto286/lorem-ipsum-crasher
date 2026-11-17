@@ -4,3 +4,8 @@ License: CC0 1.0 Universal (public domain), https://creativecommons.org/publicdo
 
 Changes: animation frames joined into horizontal strips.
 player.png is elf_m_idle with an open laptop drawn into its hands.
+
+ghost.png is the 16 px ghost of the free Creatures pack by SpritePilot
+https://spritepilot.com/free-game-assets/creatures
+License: CC0 1.0 Universal (public domain), https://creativecommons.org/publicdomain/zero/1.0/
+Changes: none, the strip is used as downloaded (ghost-16px_strip12.png, 12 frames of 16x16).

@@ -14,6 +14,7 @@ import backdropUrl from '../assets/backgrounds/arena.jpg';
 import fontUrl from '../assets/font/PressStart2P-Regular.ttf';
 import bigDemonUrl from '../assets/sprites/bigDemon.png';
 import chortUrl from '../assets/sprites/chort.png';
+import ghostUrl from '../assets/sprites/ghost.png';
 import impUrl from '../assets/sprites/imp.png';
 import playerUrl from '../assets/sprites/player.png';
 import { config } from '../config';
@@ -29,6 +30,7 @@ export class BootScene extends Phaser.Scene {
     this.load.spritesheet('player', playerUrl, config.sprites.player);
     this.load.spritesheet('imp', impUrl, config.sprites.imp);
     this.load.spritesheet('chort', chortUrl, config.sprites.chort);
+    this.load.spritesheet('ghost', ghostUrl, config.sprites.ghost);
     this.load.spritesheet('bigDemon', bigDemonUrl, config.sprites.bigDemon);
     this.load.image('backdrop', backdropUrl);
     this.load.audio('kill', killUrl);
