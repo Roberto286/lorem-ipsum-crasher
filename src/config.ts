@@ -151,6 +151,10 @@ export const config = {
   },
   // Opaque strip on top of the screen: score, lives and time on the left, buttons on the right.
   hud: { height: 24, padding: 4 },
+  // What a landed drop shows: its name floats up from the hero on the drop's colour. popupMs: how
+  // long it rises and fades; popupRise: px it rises; popupOffset: px above the hero's centre it
+  // starts. soundRate: playback rate of the kill sound, so a drop sounds higher than a plain hit.
+  pickup: { popupMs: 1000, popupRise: 28, popupOffset: 24, soundRate: 1.6 },
   // Carried spells (weight and color) drop from some demons and act on the hero, but only on a
   // clean kill: the carrier's last word typed with no wrong letter. The others, like freeze, are
   // cast by the hero roles. GameSession.cast is the one entry point. weight: relative odds among

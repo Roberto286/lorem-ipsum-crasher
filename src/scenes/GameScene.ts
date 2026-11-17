@@ -3,6 +3,7 @@ import { config, type ClassKey } from '../config';
 import { Enemy } from '../entities/Enemy';
 import { Player } from '../entities/Player';
 import { hurlWord } from '../entities/wordProjectile';
+import { pickupOf } from '../utils/drops';
 import { GameSession, type Cast, type EnemyState } from '../utils/gameSession';
 import { t } from '../utils/i18n';
 import { listenForKeys } from '../utils/keyboard';
@@ -220,6 +221,8 @@ export class GameScene extends Phaser.Scene {
 
   /** Shows a spell that the session has already applied. */
   private showCast(cast: Cast): void {
+    const pickup = pickupOf(cast);
+    if (pickup) this.showPickup(pickup.text, pickup.color);
     if ((cast.spell === 'patch' && cast.healed > 0) || cast.spell === 'coffee') this.pulseHud();
     if (cast.spell === 'truncate') {
       for (const state of cast.changed) this.enemies.get(state.id)?.setWords();
@@ -233,6 +236,23 @@ export class GameScene extends Phaser.Scene {
         this.sound.play(config.enemyTypes[cast.killed[0].type].deathSound);
       this.cameras.main.shake(config.spells.drop.shakeMs, 0.01);
     }
+  }
+
+  /** Floats a drop's name up from the hero on the drop's colour, and plays a pitched-up hit. */
+  private showPickup(text: string, color: number): void {
+    const { popupMs, popupRise, popupOffset, soundRate } = config.pickup;
+    const popup = addText(this, this.player.x, this.player.y - popupOffset, text, {
+      backgroundColor: Phaser.Display.Color.IntegerToColor(color).rgba,
+      padding: { x: 2, y: 2 },
+    });
+    this.tweens.add({
+      targets: popup,
+      y: popup.y - popupRise,
+      alpha: 0,
+      duration: popupMs,
+      onComplete: () => popup.destroy(),
+    });
+    this.sound.play('kill', { rate: soundRate });
   }
 
   private pulseHud(): void {

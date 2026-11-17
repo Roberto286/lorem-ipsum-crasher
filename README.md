@@ -45,6 +45,8 @@ Some demons carry a spell, from the first seconds of a run. Its effect applies o
 - **Cache**: doubles word points for 8 s. A second cache restarts the timer.
 - **Coffee**: refills your skill cooldown and adds 5 charge to your ultimate.
 
+When a drop lands, its name floats up from your hero and a higher-pitched blip plays.
+
 High scores are saved in your browser, one board per level and role.
 
 ## Development
