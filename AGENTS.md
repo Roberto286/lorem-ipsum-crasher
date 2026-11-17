@@ -2,26 +2,30 @@
 
 ## Project Overview
 
-Lorem Ipsum Crasher is a desktop-only browser typing game built with Phaser 4, TypeScript and Vite. Demons walk toward the hero at the center of the screen, each carrying lorem-ipsum words; typing a word hurls it at the demon. A demon that reaches the hero costs a life.
+Lorem Ipsum Crasher is a desktop-only browser typing game built with Phaser 4, TypeScript and Vite. Demons walk toward the hero at the center of the screen, each carrying lorem-ipsum words; typing a word hurls it at the demon. A demon that reaches the hero costs lives: one, or two for a tank.
 
-There is no README, CI, changelog or release process. This file is the only project documentation.
+There is no CI, changelog or release process. `README.md` is for players and contributors; this file is for agents.
 
 ## Architecture & Data Flow
 
 The core rule: **game rules are render-free, scenes only draw and forward input.**
 
 - `src/utils/gameSession.ts` — `GameSession` owns all run state (enemies, typed buffer, score, score multiplier and streak, lives, spawn timer) and has no Phaser dependency, so it runs headless in tests. Enemy positions are polar (`angle`, `distance`) relative to the player.
-- Enemy types: `EnemyState.type` (`EnemyType`, a key of `config.enemyTypes`) picks the sprite, the speed (scale and cap on the `enemySpeed` curve), the lives lost when the demon reaches the hero and the word rules. A regular spawn is a `grunt`, or a `kamikaze` (one short word, fast, side edges only) with the chance of the `kamikazeChance` curve. The `tank` miniboss comes on its own timer (`config.difficulty.tankSpawnSeconds`) with many words, in short phrases on whole-phrase levels; its label shows `config.enemy.maxVisibleWords` texts and a count of the rest.
+- Levels: `config.levels` scale the spawn interval (`spawnIntervalScale`), words per demon (`maxWordsPerEnemy`), kamikaze chance (`kamikazeChanceScale`) and the buffer rules (`erasableTypos`, `wholePhrase`). The difficulty curves are sampled by `difficultyAt(seconds, level)` in `src/utils/difficulty.ts`.
+- Enemy types: `EnemyState.type` (`EnemyType`, a key of `config.enemyTypes`) picks the sprite, the speed (scale and cap on the `enemySpeed` curve), the lives lost when the demon reaches the hero and the word rules. A regular spawn is a `grunt`, or a `kamikaze` (one short word, fast, side edges only) with the chance of the `kamikazeChance` curve times the level's `kamikazeChanceScale` (easy 0.5, the rest 1), capped at `difficulty.maxKamikazeChance`. The `tank` miniboss comes on its own timer (`config.difficulty.tankSpawnSeconds`) with many words, in short phrases on whole-phrase levels; its label shows `config.enemy.maxVisibleWords` texts and a count of the rest.
 - Spells: `EnemyState.spell` (a `CarriedSpell`: the keys of `config.spells` with a `weight`) marks a carrier. A regular spawn carries one with the chance of the `spellChance` curve; a tank always does. Freeze is not carried: no demon carries it, the hero roles cast it. `GameSession.cast(spell)` applies a spell and returns its `Cast`. `typeLetter` casts the carrier's spell only on a clean kill (its last word typed with no wrong letter, read before `countWord()` clears the flaw); a carrier that dies dirty or reaches the hero casts nothing. The spell roll is the last rng call of a spawn, so seeded runs stay stable. `freeze` sets `GameSession.frozen`, a global timer (`frozenMs`) that `advanceEnemies` honours: no demon moves while it lasts, and a spawn during it stays put too. `GameScene.drawEnemies` passes it to `Enemy.setFrozen` every frame, which tints the sprite and pauses its walk.
   `firewall` is carried like `patch`. Casting it sets `GameSession.shield` to `config.spells.firewall.hits`; `advanceEnemies` lets the shield absorb whole demons that reach the hero, one per point, in `reached` order. An absorbed demon deals no damage and keeps the combo; a second firewall does not stack.
   `linter` is carried like `patch`. Casting it sets `GameSession.forgiven` to `config.spells.linter.typos`; `recordWrongLetter` spends one per wrong letter and returns early, so the combo, streak and the word's perfect flag stay as they were. Erasable and hell buffer rules still apply. A second linter does not stack.
   `cache` is carried like `patch`. Casting it sets `GameSession.cacheMs` to `config.spells.cache.seconds` times 1000 and `update()` counts it down, whether or not a freeze is on. While `cached`, a completed word's points are multiplied by `scoreScale`; combo and streak are untouched. A second cache restarts the timer.
+  `coffee` is carried like `patch`. Casting it refills the hero's skill cooldown and adds `config.spells.coffee.chargeWords` (5) to the ultimate charge.
 - Role abilities: a role's `skill` and `ultimate` in `config.classes` fire when their typed command is typed while ready (`readyAbilities`). Commands never share a prefix with lorem words, so typing one never clashes with a demon. The skill runs a `skillCooldownMs` cooldown; the ultimate charges one step per perfect word and one per `chargeSeconds` of play (`ultimateCharge`, up to `chargeWords`) and empties when used. Typing a command returns `kind: 'ability'` and changes no score, combo or flaw state. The devops skill is `throttle`: every demon moves at `throttle.speedScale` while it lasts, and a second one restarts the timer. The devops ultimate is `freeze`. The cto skill is `pushback`: every demon moves back `pushback.pixels`, never past the edge it came in from.
   The cto ultimate is `descope`: every demon on screen gets a short word of at least `descope.letters` letters, free of shared prefixes, for `descope.seconds`. Typing it kills the demon whatever words it had left. The window ends by restoring the full words.
+- Junior: skill `tab` completes the closest demon's next word as if typed perfectly; it counts as a typed word, may kill, and casts its carried spell. Ultimate `snippet` lasts 6 s; typing the first 2 letters of the closest demon's next word kills that demon outright.
 - DBA: the skill is `truncate`, which cuts `truncate.letters` letters off the end of every demon's next word. It never cuts below one letter and never leaves two demons sharing a prefix. The ultimate is `drop`: it removes every demon, scoring their remaining letters at the base rate (no multiplier or cache). It charges slower than `freeze`.
-- Passives: a role's optional `passive` in `config.classes`, read in `completeWord` and `advanceEnemies`. Junior `graceSeconds`: a demon reaching the hero stops there (`EnemyState.graceMs`, real time, freeze does not stretch it), stays typeable and costs a life only when the grace runs out. Devops `slowFactor` / `slowSeconds`: a word typed on a demon that survives it slows that demon (`EnemyState.slowMs`). DBA `burnLetters`: each kill cuts that many letters off the closest surviving demon's next word (`burned` on the result). CTO `pushPixels`: a word that leaves the demon alive pushes it back, never past its edge. Kills never trigger the slow or the push.
-- HUD: active drops (`FW`, `LINT`, `CACHE`) render right-aligned in the typed box, not the top strip; `typedBox.maxLetters` is 31 so the centred buffer clears them. The left part of the typed box lists each ability by its command (skill above ultimate, a lone one centred): white while locked, with its first letters yellow as the charge fills; yellow as a whole when ready, and the typed prefix of a ready command turns red.
+- Passives: a role's optional `passive` in `config.classes`, read in `completeWord` and `advanceEnemies`. Junior `graceSeconds`: a demon reaching the hero stops there (`EnemyState.graceMs`, real time, freeze does not stretch it), stays typeable and costs a life only when the grace runs out. Devops `slowFactor` / `slowSeconds`: a word typed on a demon that survives it slows that demon (`EnemyState.slowMs`). DBA `burnLetters`: each kill cuts that many letters off the closest surviving demon's next word (`burned` on the result; a tab kill burns too). CTO `pushPixels`: a word that leaves the demon alive pushes it back, never past its edge. Kills never trigger the slow or the push.
+- HUD: active drops (`FW`, `LINT`, `CACHE`) render right-aligned in the typed box, not the top strip; `typedBox.maxLetters` is 31 so the centred buffer clears them. The left part of the typed box lists each ability by its command (skill above ultimate, a lone one on the box's centre line): white while locked, with its first letters yellow as the charge fills; yellow as a whole when ready, and the typed prefix of a ready command turns red. The typed buffer itself turns red while it holds a typo.
 - `src/scenes/GameScene.ts` — renders `GameSession` state, converts polar positions to screen coordinates, plays sounds and tweens.
+- Sounds: a wrong letter or typo plays `error`; a word that hits plays `kill`; a kill plays the demon's `deathSound`; a player hit plays `hurt`; kamikaze and tank spawns play `screechKamikaze` and `laughTank`, each at most once per `config.enemy.spawnSoundGapMs`; game over plays `gameOver`.
 
 Key press flow:
 
@@ -54,15 +58,15 @@ Cross-scene state lives in the Phaser `registry`: `level` and `heroClass` (both 
 
 ## Key Directories
 
-| Path            | Purpose                                                                                                                                                 |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/scenes/`   | Phaser scenes: rendering, input wiring, scene transitions                                                                                               |
-| `src/entities/` | Game objects: `Enemy` (sprite + label wrapper), `Player` (extends `Phaser.GameObjects.Sprite`), `hurlWord`                                              |
-| `src/utils/`    | Phaser-free logic (`gameSession`, `difficulty`, `words`, `labelLayout`, `scoreStorage`, `i18n`) plus scene helpers (`keyboard`, `ui`)                   |
-| `src/assets/`   | `audio/` (effects `.wav`, `music.ogg` + `.mp3`), `backgrounds/`, `font/`, `sprites/*.png` (frame strips); `CREDITS.txt`                                 |
-| `scripts/`      | `generate_music.py`: regenerates the music loop (Python stdlib + `ffmpeg`); `generate_sfx.py`: regenerates the enemy sounds in `audio/` (Python stdlib) |
-| `tests/`        | Vitest unit tests, flat, one file per `src/utils` module                                                                                                |
-| `dist/`         | Build output, git-ignored; never edit                                                                                                                   |
+| Path            | Purpose                                                                                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/scenes/`   | Phaser scenes: rendering, input wiring, scene transitions                                                                                                                       |
+| `src/entities/` | Game objects: `Enemy` (sprite + label wrapper), `Player` (extends `Phaser.GameObjects.Sprite`), `hurlWord`                                                                      |
+| `src/utils/`    | Phaser-free logic (`gameSession`, `difficulty`, `words`, `labelLayout`, `scoreStorage`, `i18n`) plus scene helpers (`keyboard`, `ui`)                                           |
+| `src/assets/`   | `audio/` (effects `.wav`, `music.ogg` + `.mp3`), `backgrounds/`, `font/`, `sprites/*.png` (frame strips); `CREDITS.txt`                                                         |
+| `scripts/`      | `generate_music.py`: regenerates `audio/music.ogg` and `music.mp3` (Python stdlib + `ffmpeg`); `generate_sfx.py`: regenerates the five enemy sounds in `audio/` (Python stdlib) |
+| `tests/`        | Vitest unit tests, flat, one file per tested `src/utils` module; `ui` and `keyboard` (Phaser-bound) have none                                                                   |
+| `dist/`         | Build output, git-ignored; never edit                                                                                                                                           |
 
 ## Development Commands
 
@@ -91,7 +95,7 @@ Before finishing a change, run `npm run lint`, `npm test` and `npx tsc --noEmit`
 
 **Naming**
 
-- Files exporting a class are PascalCase (`GameScene.ts`, `Enemy.ts`); files exporting functions are camelCase (`wordProjectile.ts`, `scoreStorage.ts`).
+- Scenes and classes are PascalCase (`GameScene.ts`, `Enemy.ts`, `Player.ts`); files that export only functions are camelCase (`wordProjectile.ts`, `scoreStorage.ts`, `labelLayout.ts`). `utils/gameSession.ts` stays camelCase although it exports the class `GameSession`.
 - Scene keys are string literals matching the class name: `super('GameScene')`, `this.scene.start('MenuScene', run)`.
 - Tests are `tests/<module>.test.ts`, mirroring `src/utils/<module>.ts`.
 
@@ -134,7 +138,7 @@ Conventional Commits with a lowercase subject: `feat: hurl the typed word at the
 
 ## Testing & QA
 
-- Framework: Vitest, default Node environment (no jsdom), no `vitest.config.*`; it picks up `vite.config.ts`.
+- Framework: Vitest, default Node environment (no jsdom) and no `vitest.config.*`; `vite.config.ts` has no `test` block, so the defaults apply.
 - Globals are off: `import { describe, expect, it } from 'vitest'` in every test file.
 - Only Phaser-free modules in `src/utils/` are tested. Put new game rules in `GameSession` or another pure util so they can be tested without Phaser; scenes and entities have no tests.
 - Style: `describe` per unit, `it('plain-English behavior sentence')`.
