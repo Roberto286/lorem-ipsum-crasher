@@ -8,17 +8,18 @@ Desktop browsers only. Phones and tablets get a notice instead of the game.
 
 - Type the lorem ipsum word on a demon to hurl it at that demon. Typing it fully kills the demon.
 - Demons that reach you cost lives. Tanks cost two.
-- Perfect words build a combo multiplier (up to x5). A wrong letter breaks it.
-- Backspace erases a wrong letter on easy, normal and hard. On hell a wrong letter clears the buffer and ends the combo.
+- Perfect words (no wrong letter) build a combo multiplier, up to x5: one level per 5 perfect words in a row. Losing a life resets it to x1.
+- A wrong letter drops the multiplier one level, once per word, and breaks the streak. On hell it resets the multiplier to x1.
+- Backspace erases a wrong letter on easy, normal and hard. On hell a wrong letter clears the buffer and speeds up the demon you were typing at, which turns its label red.
 - Escape pauses. Pausing also happens when the window loses focus.
-- Menu: arrow keys choose level and class, Enter starts. The intro can be skipped with Escape.
+- Menu: arrow keys choose level and class, Enter starts. Press H in the menu for the in-game guide. The intro can be skipped with Escape.
 
 ## Levels
 
 - **Easy**: slower spawns, one word per demon, fewer kamikazes.
 - **Normal**: the default.
 - **Hard**: faster spawns, up to three words per demon.
-- **Hell**: like hard, but a demon's words are typed as one phrase and typos are not forgiven.
+- **Hell**: like hard, but a demon's words are typed as one phrase, spaces included, and typos are not forgiven. A tank's words come as 2-word phrases on hell only.
 
 ## Roles
 
@@ -35,13 +36,13 @@ The ultimate charges with perfect words and with time.
 
 ## Drops
 
-Some demons carry a spell. You get it only by killing the demon with a clean word (no wrong letters).
+Some demons carry a spell. Its effect applies only if you kill the demon with a clean word (no wrong letters in that word). A carrier's label has a coloured background; a tank keeps its own background and gets a frame in the spell colour.
 
-- **Patch**: restores a life.
-- **Firewall**: the next demons that would reach you are stopped instead.
-- **Linter**: forgives the next wrong letters without breaking the combo.
-- **Cache**: doubles word points for a while.
-- **Coffee**: refills your skill cooldown and charges your ultimate.
+- **Patch**: +1 life, never above your starting lives.
+- **Firewall**: stops the next demon that reaches you instead of letting it hit. A second firewall does not stack.
+- **Linter**: forgives the next wrong letter, so the combo holds. A second linter does not stack.
+- **Cache**: doubles word points for 8 s. A second cache restarts the timer.
+- **Coffee**: refills your skill cooldown and adds 5 charge to your ultimate.
 
 High scores are saved in your browser, one board per level and role.
 
