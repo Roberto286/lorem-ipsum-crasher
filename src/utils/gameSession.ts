@@ -84,7 +84,7 @@ export interface ReadyAbility {
 }
 
 /** The abilities a role may have: every role has a skill; devops, dba and cto also an ultimate. */
-interface RoleAbilities {
+export interface RoleAbilities {
   // Every role has a tint: it keeps junior's `{ tint }` from being a weak, all-optional type.
   tint: number;
   skill?: { command: string; spell: SpellKey; cooldownSeconds: number };

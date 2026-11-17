@@ -29,12 +29,16 @@ export class MenuScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const centerX = width / 2;
     const start = () => this.scene.start('GameScene');
+    const openHelp = () => this.scene.start('HelpScene', lastRun);
 
     addText(this, centerX, height * 0.1, t('title'), {
       color: config.colors.accent,
       fontSize: `${config.font.titleSize}px`,
     });
     addText(this, centerX, height * 0.27, this.introText(lastRun));
+    addButton(this, width - config.help.hintMargin, config.help.hintMargin, t('helpHint'), openHelp)
+      .setOrigin(1, 0)
+      .setColor(config.colors.dim);
     this.levelButton = addButton(this, centerX, height * 0.42, '', () => this.shiftLevel(1));
     this.classButton = addButton(this, centerX, height * 0.5, '', () => this.shiftClass(1));
     this.roleCommands = addText(this, centerX, height * 0.5 + 14, '', {
@@ -48,6 +52,7 @@ export class MenuScene extends Phaser.Scene {
 
     listenForKeys(this, (key) => {
       if (key === 'Enter') start();
+      else if (key === 'h' || key === 'H') openHelp();
       else if (key === 'ArrowLeft') this.shiftLevel(-1);
       else if (key === 'ArrowRight') this.shiftLevel(1);
       else if (key === 'ArrowUp') this.shiftClass(-1);

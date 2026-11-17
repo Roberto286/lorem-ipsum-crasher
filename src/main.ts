@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { config } from './config';
 import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
+import { HelpScene } from './scenes/HelpScene';
 import { IntroScene } from './scenes/IntroScene';
 import { MenuScene } from './scenes/MenuScene';
 
@@ -13,5 +14,5 @@ new Phaser.Game({
   backgroundColor: config.colors.background,
   pixelArt: true,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [BootScene, IntroScene, MenuScene, GameScene],
+  scene: [BootScene, IntroScene, MenuScene, HelpScene, GameScene],
 });

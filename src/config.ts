@@ -108,6 +108,22 @@ export const config = {
   typedBox: { height: 32, errorFlashMs: 150, maxLetters: 31, visibleLetters: 31 },
   // The typed box's ability lines: px each sits from the box centre, skill above, ultimate below.
   abilityLineOffset: 5,
+  // Layout of the how-to-play screen, px. margin: left and right edge; titleTop: top of the page
+  // title; bodyTop: top of the first block; blockGap: between blocks; headingGap: under a block's
+  // heading; iconColumn: width kept left of a block that has a sprite or swatch; swatch: side of a
+  // drop's colour square; footerOffset: distance of the footer from the bottom edge; hintMargin:
+  // gap between the menu's help hint and the screen corner.
+  help: {
+    margin: 8,
+    titleTop: 6,
+    bodyTop: 30,
+    blockGap: 12,
+    headingGap: 3,
+    iconColumn: 40,
+    swatch: 8,
+    footerOffset: 8,
+    hintMargin: 4,
+  },
   // Opaque strip on top of the screen: score, lives and time on the left, buttons on the right.
   hud: { height: 24, padding: 4 },
   // Carried spells (weight and color) drop from some demons and act on the hero, but only on a
