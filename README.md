@@ -37,7 +37,7 @@ The ultimate charges with perfect words and with time.
 
 ## Drops
 
-Some demons carry a spell, from the first seconds of a run. Its effect applies only if you kill the demon with a clean word (no wrong letters in that word). A carrier's label has a coloured background and the drop's name above it; a tank keeps its own background and gets a frame in the spell colour.
+Some demons carry a spell, from the first seconds of a run. Its effect applies only if you kill the demon with a clean word (no wrong letters in that word). A carrier's label has a coloured background; a tank keeps its own background and gets a frame in the spell colour.
 
 - **Patch**: +1 life, never above your starting lives.
 - **Firewall**: stops the next demon that reaches you instead of letting it hit. A second firewall does not stack.

@@ -2,7 +2,7 @@ import { config } from '../config';
 import type { CarriedSpell, Cast } from './gameSession';
 import { t, type StringKey } from './i18n';
 
-/** The string that names each carried spell: on a carrier's label and on the help page. */
+/** The string that names each carried spell: on the help page and in the pickup text. */
 export const dropNames: Record<CarriedSpell, StringKey> = {
   patch: 'dropPatch',
   firewall: 'dropFirewall',
