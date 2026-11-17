@@ -295,6 +295,7 @@ export class GameScene extends Phaser.Scene {
       config.enemy.labelSpacing,
     );
     demons.forEach(({ state, enemy, x, y }, i) => {
+      enemy.syncHidden();
       enemy.moveTo(x, y, boxes[i]);
       enemy.highlight(matches.includes(state) ? typed.length : 0);
       enemy.setFrozen(this.session.frozen);

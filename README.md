@@ -8,6 +8,7 @@ Desktop browsers only. Phones and tablets get a notice instead of the game.
 
 - Type the lorem ipsum word on a demon to hurl it at that demon. Typing it fully kills the demon.
 - Demons that reach you cost lives. Tanks cost two.
+- Ghosts are see-through demons whose word shows as `???` until they come close (100 px from you). They carry one word on every level, hell included. They start to appear after about 45 s.
 - Perfect words (no wrong letter) build a combo multiplier, up to x5: one level per 5 perfect words in a row. Losing a life resets it to x1.
 - A wrong letter drops the multiplier one level, once per word, and breaks the streak. On hell it resets the multiplier to x1.
 - Backspace erases a wrong letter on easy, normal and hard. On hell a wrong letter clears the buffer and speeds up the demon you were typing at, which turns its label red.
@@ -16,7 +17,7 @@ Desktop browsers only. Phones and tablets get a notice instead of the game.
 
 ## Levels
 
-- **Easy**: slower spawns, one word per demon, fewer kamikazes.
+- **Easy**: slower spawns, one word per demon, fewer kamikazes and ghosts.
 - **Normal**: the default.
 - **Hard**: faster spawns, up to three words per demon.
 - **Hell**: like hard, but a demon's words are typed as one phrase, spaces included, and typos are not forgiven. A tank's words come as 2-word phrases on hell only.

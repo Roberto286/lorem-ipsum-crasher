@@ -106,7 +106,7 @@ describe('kamikazes', () => {
     const { kamikazeChance } = difficultyAt(lateSeconds, 'normal');
 
     expect(spawnAt(lateSeconds, () => kamikazeChance / 2).type).toBe('kamikaze');
-    expect(spawnAt(lateSeconds, () => kamikazeChance).type).toBe('grunt');
+    expect(spawnAt(lateSeconds, () => 0.99).type).toBe('grunt');
   });
 
   it('carry one short word on every level', () => {
@@ -152,6 +152,131 @@ describe('kamikazes', () => {
       session.enemies.push(enemy(onScreen[0], { words: [...onScreen] }));
       const [spawned] = session.update(lateSeconds * 1000).spawned;
 
+      expect(onScreen.filter((word) => sharesPrefix(word, spawned.words[0]))).toEqual([]);
+    }
+  });
+});
+
+describe('ghosts', () => {
+  const { ghost } = config.enemyTypes;
+  const lateSeconds = config.difficulty.ghostChance[2][0];
+  /** A hidden ghost far from the hero, at the given word. */
+  const hiddenGhost = (word: string, overrides: Partial<EnemyState> = {}) =>
+    enemy(word, {
+      type: 'ghost',
+      hidden: true,
+      distance: ghost.revealDistance + 100,
+      ...overrides,
+    });
+  const spawnAt = (seconds: number, roll: number, level: LevelKey = 'normal', index = 0) =>
+    newSession(
+      rollThen(roll, () => index / 100),
+      level,
+    ).update(seconds * 1000).spawned[0];
+  /** The roll that lands in the middle of the ghost band of a level at lateSeconds. */
+  const ghostRoll = (level: LevelKey) => {
+    const { kamikazeChance, ghostChance } = difficultyAt(lateSeconds, level);
+    return kamikazeChance + ghostChance / 2;
+  };
+  /** A forced ghost per level and per rng value from 0 to 0.99. */
+  const sweep = () =>
+    levels.flatMap((level) =>
+      Array.from({ length: 100 }, (_, index) =>
+        spawnAt(lateSeconds, ghostRoll(level), level, index),
+      ),
+    );
+
+  it('take the place of a grunt when the roll falls in the band above the kamikazes', () => {
+    const { kamikazeChance, ghostChance } = difficultyAt(lateSeconds, 'normal');
+
+    expect(spawnAt(lateSeconds, kamikazeChance - 0.001).type).toBe('kamikaze');
+    expect(spawnAt(lateSeconds, kamikazeChance).type).toBe('ghost');
+    expect(spawnAt(lateSeconds, kamikazeChance + ghostChance - 0.001).type).toBe('ghost');
+    expect(spawnAt(lateSeconds, kamikazeChance + ghostChance).type).toBe('grunt');
+  });
+
+  it('share of regular spawns follows the curve and the level scale', () => {
+    const share = (seconds: number, level: LevelKey) =>
+      Array.from(
+        { length: 1000 },
+        (_, index) => spawnAt(seconds, index / 1000, level).type === 'ghost',
+      ).filter(Boolean).length / 1000;
+
+    for (const level of levels) {
+      expect(share(lateSeconds, level)).toBeCloseTo(
+        difficultyAt(lateSeconds, level).ghostChance,
+        2,
+      );
+      expect(share(0, level)).toBe(0);
+    }
+    expect(share(lateSeconds, 'easy')).toBeLessThan(share(lateSeconds, 'normal'));
+  });
+
+  it('come hidden, with one short word on every level, hell included', () => {
+    for (const { type, words, hidden } of sweep()) {
+      expect(type).toBe('ghost');
+      expect(hidden).toBe(true);
+      expect(words).toHaveLength(1);
+      expect(words[0]).toMatch(/^[a-z]+$/);
+      expect(words[0].length).toBeLessThanOrEqual(ghost.maxWordLength);
+    }
+  });
+
+  it('never go faster than their cap and leave time to type the word after the reveal', () => {
+    const endless = spawnAt(100_000, ghostRoll('normal'));
+    const secondsLeft = (ghost.revealDistance - config.player.hitRadius) / ghost.maxSpeed;
+
+    expect(endless.speed).toBe(ghost.maxSpeed);
+    expect(secondsLeft).toBeGreaterThanOrEqual(2.5);
+  });
+
+  it('cannot be typed while hidden', () => {
+    const session = newSession();
+    session.enemies.push(hiddenGhost('lorem'));
+
+    expect(session.typeLetter('l').kind).toBe('typo');
+    expect(session.matches).toEqual([]);
+    expect(session.target).toBeUndefined();
+    session.eraseLetter();
+    expect(session.cast('tab')).toEqual({ spell: 'tab' });
+    expect(session.enemies).toHaveLength(1);
+  });
+
+  it('is revealed inside the reveal distance, stays revealed, and can then be killed', () => {
+    const session = newSession();
+    const ghostState = hiddenGhost('lorem', { distance: ghost.revealDistance + 5, speed: 20 });
+    session.enemies.push(ghostState);
+
+    session.update(100);
+    expect(ghostState.hidden).toBe(true);
+    session.update(400);
+    expect(ghostState.hidden).toBe(false);
+    session.cast('pushback');
+    expect(ghostState.distance).toBeGreaterThan(ghost.revealDistance);
+    expect(ghostState.hidden).toBe(false);
+    expect(type(session, 'lorem').at(-1)?.kind).toBe('kill');
+    expect(session.enemies).not.toContain(ghostState);
+  });
+
+  it('costs its damage when it reaches the hero', () => {
+    const session = newSession(() => 0, 'normal', 'devops');
+    session.enemies.push(hiddenGhost('lorem', { distance: config.player.hitRadius, speed: 1 }));
+
+    session.update(16);
+    expect(session.lives).toBe(config.player.lives - ghost.damage);
+  });
+
+  it('never share a prefix with a word on screen, hidden or not', () => {
+    for (let index = 0; index < 100; index++) {
+      const around = newSession(rollThen(0.99, () => index / 100));
+      around.enemies.push(hiddenGhost('dolore'));
+      const [grunt] = around.update(lateSeconds * 1000).spawned;
+      expect(grunt.words.filter((word) => sharesPrefix(word, 'dolore'))).toEqual([]);
+
+      const session = newSession(rollThen(ghostRoll('normal'), () => index / 100));
+      session.enemies.push(enemy(onScreen[0], { words: [...onScreen] }));
+      const [spawned] = session.update(lateSeconds * 1000).spawned;
+      expect(spawned.type).toBe('ghost');
       expect(onScreen.filter((word) => sharesPrefix(word, spawned.words[0]))).toEqual([]);
     }
   });

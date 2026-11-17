@@ -70,6 +70,21 @@ describe('difficultyAt', () => {
     );
   });
 
+  it('sends no ghosts at the start, none before the basics are learned, then more', () => {
+    const chanceAt = (seconds: number) => difficultyAt(seconds, 'normal').ghostChance;
+    const [, [kneeSeconds]] = config.difficulty.ghostChance;
+
+    for (const level of ['easy', 'normal', 'hard', 'hell'] as const) {
+      expect(difficultyAt(0, level).ghostChance).toBe(0);
+    }
+    expect(chanceAt(30)).toBe(0);
+    expect(chanceAt(60)).toBeGreaterThan(0);
+    expect(chanceAt(kneeSeconds)).toBeGreaterThan(chanceAt(60));
+    expect(difficultyAt(100_000, 'easy').ghostChance).toBe(
+      config.difficulty.maxGhostChance * config.levels.easy.ghostChanceScale,
+    );
+  });
+
   it('returns whole word lengths', () => {
     expect(Number.isInteger(difficultyAt(37, 'normal').maxWordLength)).toBe(true);
   });

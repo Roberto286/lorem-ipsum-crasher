@@ -66,12 +66,16 @@ const en = {
   levelPhrase: 'Words form a phrase, typed whole, spaces included.',
   levelSpawn: 'Spawn gap {pct}%.',
   levelKamikaze: 'Kamikazes {pct}%.',
+  levelGhost: 'Ghosts {pct}%.',
   levelErasable: 'Backspace erases a typo.',
   levelReset: 'A typo clears the buffer and enrages the demon: speed x{boost}.',
   demonGrunt: 'Walks in from any edge. Speed x{speedScale}. Costs {damage} life(s).',
   demonKamikaze:
     'One word of up to {maxWordLength} letters. Sides only. Speed x{speedScale}. ' +
     'Costs {damage} life(s).',
+  demonGhost:
+    'One word of up to {maxWordLength} letters, hidden as ??? until it is {revealDistance} px ' +
+    'from you. Speed x{speedScale}. Costs {damage} life(s).',
   demonTank:
     'Miniboss: first at {first}s, then every {every}s. {minWords} to {maxWords} words. ' +
     'Speed x{speedScale}. Costs {damage} life(s). Always carries a drop.',
@@ -87,6 +91,8 @@ const en = {
     "Its label wears the drop's color; a tank keeps its own and gets a frame.",
   grunt: 'GRUNT',
   kamikaze: 'KAMIKAZE',
+  ghost: 'GHOST',
+  hiddenWord: '???',
   tank: 'TANK',
   dropPatch: 'PATCH',
   dropFirewall: 'FIREWALL',

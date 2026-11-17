@@ -9,6 +9,8 @@ export interface Difficulty {
   maxWords: number;
   /** Chance (0 to 1) that a regular spawn is a kamikaze. */
   kamikazeChance: number;
+  /** Chance (0 to 1) that a regular spawn is a ghost. */
+  ghostChance: number;
   /** Chance (0 to 1) that a regular spawn carries a spell. */
   spellChance: number;
 }
@@ -25,7 +27,8 @@ export function sampleCurve(points: Curve, seconds: number): number {
 /** Time ramps every curve up; the level picked in the menu sets how crowded it gets. */
 export function difficultyAt(seconds: number, level: LevelKey): Difficulty {
   const { difficulty } = config;
-  const { spawnIntervalScale, maxWordsPerEnemy, kamikazeChanceScale } = config.levels[level];
+  const { spawnIntervalScale, maxWordsPerEnemy, kamikazeChanceScale, ghostChanceScale } =
+    config.levels[level];
   const kamikazeChance = sampleCurve(difficulty.kamikazeChance, seconds);
   return {
     spawnIntervalMs: Math.max(
@@ -37,6 +40,11 @@ export function difficultyAt(seconds: number, level: LevelKey): Difficulty {
     maxWords: maxWordsPerEnemy,
     kamikazeChance:
       Math.min(difficulty.maxKamikazeChance, Math.max(0, kamikazeChance)) * kamikazeChanceScale,
+    ghostChance:
+      Math.min(
+        difficulty.maxGhostChance,
+        Math.max(0, sampleCurve(difficulty.ghostChance, seconds)),
+      ) * ghostChanceScale,
     spellChance: Math.min(
       difficulty.maxSpellChance,
       Math.max(0, sampleCurve(difficulty.spellChance, seconds)),

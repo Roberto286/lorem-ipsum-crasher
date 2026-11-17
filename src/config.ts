@@ -12,7 +12,12 @@ export const config = {
     dim: '#6b5a7a',
     enraged: '#ff5a5a',
     // Behind a demon's words, per enemy type: the tank's own color marks it as the miniboss.
-    labelBackground: { grunt: '#000000aa', kamikaze: '#000000aa', tank: '#5a1a6ecc' },
+    labelBackground: {
+      grunt: '#000000aa',
+      kamikaze: '#000000aa',
+      ghost: '#000000aa',
+      tank: '#5a1a6ecc',
+    },
     panel: 0x0d0812,
     panelError: 0x8a1c1c,
     typedBoxBorder: 0xffe14d,
@@ -57,6 +62,7 @@ export const config = {
   // damage: lives lost when the demon reaches the hero.
   // deathSound: sound key played when the demon dies; one effect per type.
   // spawnSound: optional sound key played once when a demon of that type appears.
+  // alpha, tint: optional sprite opacity and colour of a ghost, which has no sheet of its own.
   enemyTypes: {
     grunt: { sprite: 'chort', speedScale: 1, maxSpeed: 80, damage: 1, deathSound: 'deathGrunt' },
     // Carries one word of up to maxWordLength letters on every level and enters from the sides
@@ -70,6 +76,25 @@ export const config = {
       maxWordLength: 4,
       deathSound: 'deathKamikaze',
       spawnSound: 'screechKamikaze',
+    },
+    // Carries one word of up to maxWordLength letters on every level, hidden (the label shows
+    // ???) until the demon comes within revealDistance px of the hero, then it fades in over
+    // revealMs. Reveal is sticky: a pushback does not hide it again. It enters from any edge.
+    // Timing: the walk from the reveal to the hero is (revealDistance - player.hitRadius) /
+    // maxSpeed = (100 - 12) / 35 = 2.5 s at best. Typing 6 letters at 5 to 6 letters a second
+    // takes about 1.1 s, so about 1.4 s is left to read the word and start. A hell typo
+    // speeds the demon up and shortens that.
+    ghost: {
+      sprite: 'chort',
+      alpha: 0.7,
+      tint: 0x9fffc0,
+      speedScale: 1,
+      maxSpeed: 35,
+      damage: 1,
+      maxWordLength: 6,
+      revealDistance: 100,
+      revealMs: 400,
+      deathSound: 'deathGrunt',
     },
     // The miniboss: minWords to maxWords words on every level, typed phraseWords at a time on
     // whole-phrase levels. It enters from the sides, the long way, so there is time for them.
@@ -175,6 +200,7 @@ export const config = {
   // erasableTypos: a wrong letter stays in the buffer until erased with Backspace; without it a
   // wrong letter resets the buffer and speeds up the target.
   // kamikazeChanceScale: multiplier on the difficulty.kamikazeChance curve.
+  // ghostChanceScale: multiplier on the difficulty.ghostChance curve.
   levels: {
     easy: {
       spawnIntervalScale: 1.3,
@@ -182,6 +208,7 @@ export const config = {
       wholePhrase: false,
       erasableTypos: true,
       kamikazeChanceScale: 0.5,
+      ghostChanceScale: 0.5,
     },
     normal: {
       spawnIntervalScale: 1,
@@ -189,6 +216,7 @@ export const config = {
       wholePhrase: false,
       erasableTypos: true,
       kamikazeChanceScale: 1,
+      ghostChanceScale: 1,
     },
     hard: {
       spawnIntervalScale: 0.8,
@@ -196,6 +224,7 @@ export const config = {
       wholePhrase: false,
       erasableTypos: true,
       kamikazeChanceScale: 1,
+      ghostChanceScale: 1,
     },
     hell: {
       spawnIntervalScale: 0.8,
@@ -203,6 +232,7 @@ export const config = {
       wholePhrase: true,
       erasableTypos: false,
       kamikazeChanceScale: 1,
+      ghostChanceScale: 1,
     },
   },
   defaultLevel: 'normal',
@@ -275,8 +305,18 @@ export const config = {
       [90, 0.1],
       [180, 0.3],
     ],
+    // Chance that a regular spawn is a ghost, held between 0 and maxGhostChance. It crosses zero
+    // at 45 s, after the player has met grunts, kamikazes and the first spells. It shares the
+    // spawn's type roll with the kamikaze: a roll under kamikazeChance is a kamikaze, the next
+    // ghostChance of it a ghost, the rest grunts.
+    ghostChance: [
+      [0, -0.1],
+      [90, 0.1],
+      [180, 0.3],
+    ],
     minSpawnIntervalMs: 400,
     maxKamikazeChance: 0.35,
+    maxGhostChance: 0.15,
     // Chance that a regular spawn carries a spell, held between 0 and maxSpellChance: none at
     // the start of a run, then about one demon in ten.
     spellChance: [

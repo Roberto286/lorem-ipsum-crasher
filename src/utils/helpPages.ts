@@ -6,7 +6,7 @@ import { t, type StringKey } from './i18n';
 export interface HelpBlock {
   heading?: string;
   text: string;
-  icon?: { sprite: string } | { color: number };
+  icon?: { sprite: string; tint?: number; alpha?: number } | { color: number };
 }
 
 export interface HelpPage {
@@ -96,6 +96,9 @@ function levelText(level: LevelKey): string {
     rules.kamikazeChanceScale === 1
       ? ''
       : t('levelKamikaze', { pct: Math.round(rules.kamikazeChanceScale * 100) }),
+    rules.ghostChanceScale === 1
+      ? ''
+      : t('levelGhost', { pct: Math.round(rules.ghostChanceScale * 100) }),
     rules.erasableTypos
       ? t('levelErasable')
       : t('levelReset', { boost: config.enemy.typoSpeedBoost }),
@@ -114,6 +117,7 @@ function levelsPage(): HelpPage {
 const demonKeys: Record<EnemyType, StringKey> = {
   grunt: 'demonGrunt',
   kamikaze: 'demonKamikaze',
+  ghost: 'demonGhost',
   tank: 'demonTank',
 };
 
@@ -129,11 +133,19 @@ function demonText(type: EnemyType): string {
 function demonsPage(): HelpPage {
   return {
     title: t('helpDemons'),
-    blocks: enemyKeys.map((type) => ({
-      heading: t(type),
-      text: demonText(type),
-      icon: { sprite: config.enemyTypes[type].sprite },
-    })),
+    blocks: enemyKeys.map((type) => {
+      const rules = config.enemyTypes[type];
+      return {
+        heading: t(type),
+        text: demonText(type),
+        // The ghost wears the chort sheet, so its icon needs its tint and see-through look.
+        icon: {
+          sprite: rules.sprite,
+          tint: 'tint' in rules ? rules.tint : undefined,
+          alpha: 'alpha' in rules ? rules.alpha : undefined,
+        },
+      };
+    }),
   };
 }
 

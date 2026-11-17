@@ -25,13 +25,21 @@ export class Enemy {
   private throttled = false;
   private graced = false;
   private slowed = false;
+  // Whether the label shows the placeholder instead of the word: only a ghost does, until revealed.
+  private hiddenShown: boolean;
+  // The sprite colour of a ghost; other demons keep the art as it is.
+  private readonly baseTint?: number;
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly state: EnemyState,
   ) {
-    const { sprite } = config.enemyTypes[state.type];
+    const typeConfig = config.enemyTypes[state.type];
+    const { sprite } = typeConfig;
     this.sprite = scene.add.sprite(0, 0, sprite).play(sprite).setDepth(config.depths.enemy);
+    if ('alpha' in typeConfig) this.sprite.setAlpha(typeConfig.alpha);
+    if ('tint' in typeConfig) this.baseTint = typeConfig.tint;
+    this.hiddenShown = state.hidden === true;
     // The art faces right: flip the demons that walk in from the right.
     this.sprite.setFlipX(Math.cos(state.angle) > 0);
     const padding = { x: 2, y: 2 };
@@ -57,12 +65,32 @@ export class Enemy {
         .setStrokeStyle(1, spellColor)
         .setDepth(config.depths.enemyLabel);
     }
+    // A hidden word shows dim: the label keeps its background, so a carrier's drop colour shows.
+    if (this.hiddenShown) this.label.setColor(config.colors.dim);
     this.setWords();
+    this.refreshTint();
   }
 
-  /** Shows the state's texts: the short word while descoped, else the remaining words. */
+  /**
+   * Shows the state's texts: the short word while descoped, else the remaining words. A hidden
+   * ghost shows a placeholder.
+   */
   setWords(): void {
-    this.label.setText(labelText(this.texts));
+    this.label.setText(this.hiddenShown ? t('hiddenWord') : labelText(this.texts));
+  }
+
+  /** Shows the word of a ghost that has just been revealed: it fades in. */
+  syncHidden(): void {
+    const hidden = this.state.hidden === true;
+    if (hidden === this.hiddenShown) return;
+    this.hiddenShown = hidden;
+    this.label.setColor(config.colors.text).setAlpha(0);
+    this.setWords();
+    this.scene.tweens.add({
+      targets: this.label,
+      alpha: 1,
+      duration: config.enemyTypes.ghost.revealMs,
+    });
   }
 
   /** The texts the player types through now: the top one is typed next. */
@@ -146,11 +174,12 @@ export class Enemy {
     this.sprite.anims.timeScale = Math.min(...factors);
   }
 
-  /** Freeze tint wins over grace, which wins over slowed, which wins over none. */
+  /** Freeze tint wins over grace, which wins over slowed, which wins over the ghost's own. */
   private refreshTint(): void {
     if (this.frozen) this.sprite.setTint(config.spells.freeze.tint);
     else if (this.graced) this.sprite.setTint(config.classes.junior.passive.tint);
     else if (this.slowed) this.sprite.setTint(config.classes.devops.passive.tint);
+    else if (this.baseTint !== undefined) this.sprite.setTint(this.baseTint);
     else this.sprite.clearTint();
   }
 

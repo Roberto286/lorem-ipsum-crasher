@@ -35,5 +35,6 @@ describe('helpPages', () => {
     expect(spellText('throttle')).toContain(`${config.spells.throttle.speedScale * 100}%`);
     expect(allText(pages[0])).toContain(String(config.player.lives));
     expect(allText(pages[2])).toContain(String(config.difficulty.tankSpawnSeconds.first));
+    expect(allText(pages[2])).toContain(String(config.enemyTypes.ghost.revealDistance));
   });
 });

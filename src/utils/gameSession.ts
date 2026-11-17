@@ -20,6 +20,11 @@ export interface EnemyState {
   descoped?: string;
   /** Ms left before a demon at the hero costs a life (junior's passive); unset until it arrives. */
   graceMs?: number;
+  /**
+   * A ghost whose word is still hidden: it cannot be typed, matched or targeted, and abilities
+   * skip it. Set at spawn, cleared for good when it comes within the ghost's revealDistance.
+   */
+  hidden?: boolean;
   /** Ms left of a slow (devops passive): the demon walks at the role's slowFactor while it lasts. */
   slowMs?: number;
 }
@@ -323,7 +328,7 @@ export class GameSession {
   private burnClosest(): EnemyState | undefined {
     const letters = abilitiesOf(this.heroClass).passive?.burnLetters;
     if (letters === undefined) return undefined;
-    const [closest] = [...this.enemies].sort((a, b) => a.distance - b.distance);
+    const [closest] = this.matching('');
     return closest && this.cutNextWord(closest, letters) ? closest : undefined;
   }
 
@@ -434,7 +439,7 @@ export class GameSession {
    */
   private truncate(): Cast {
     const changed: EnemyState[] = [];
-    const closest = [...this.enemies].sort((a, b) => a.distance - b.distance);
+    const closest = this.matching('');
     for (const enemy of closest) {
       if (this.cutNextWord(enemy, config.spells.truncate.letters)) changed.push(enemy);
     }
@@ -495,7 +500,7 @@ export class GameSession {
   private descope(): Cast {
     this.descopeMs = config.spells.descope.seconds * 1000;
     const changed: EnemyState[] = [];
-    const closest = [...this.enemies].sort((a, b) => a.distance - b.distance);
+    const closest = this.matching('');
     for (const enemy of closest) {
       if (enemy.descoped !== undefined) continue;
       const short = this.shortWord(enemy);
@@ -596,7 +601,7 @@ export class GameSession {
 
   private matching(prefix: string): EnemyState[] {
     return this.enemies
-      .filter((enemy) => this.nextText(enemy).startsWith(prefix))
+      .filter((enemy) => !enemy.hidden && this.nextText(enemy).startsWith(prefix))
       .sort((a, b) => a.distance - b.distance);
   }
 
@@ -636,6 +641,11 @@ export class GameSession {
         enemy.distance -= (enemy.speed * movingMs * pace * slow) / 1000;
       }
       if (enemy.slowMs !== undefined) enemy.slowMs -= deltaMs;
+    }
+    for (const enemy of this.enemies) {
+      if (enemy.hidden && enemy.distance <= config.enemyTypes.ghost.revealDistance) {
+        enemy.hidden = false;
+      }
     }
     const graceSeconds = abilitiesOf(this.heroClass).passive?.graceSeconds;
     if (graceSeconds !== undefined) {
@@ -678,10 +688,17 @@ export class GameSession {
 
     const difficulty = difficultyAt(this.elapsedMs / 1000, this.level);
     this.untilSpawnMs += difficulty.spawnIntervalMs;
-    const { kamikazeChance, spellChance, enemySpeed } = difficulty;
-    if (this.rng() < kamikazeChance) {
+    const { kamikazeChance, ghostChance, spellChance, enemySpeed } = difficulty;
+    const roll = this.rng();
+    if (roll < kamikazeChance) {
       const word = this.pickWords(1, config.enemyTypes.kamikaze.maxWordLength);
       return [this.spawn('kamikaze', this.sideAngle(), word, enemySpeed, spellChance)];
+    }
+    if (roll < kamikazeChance + ghostChance) {
+      const { maxWordLength } = config.enemyTypes.ghost;
+      const word = this.pickWords(1, Math.min(difficulty.maxWordLength, maxWordLength));
+      const angle = this.rng() * Math.PI * 2;
+      return [this.spawn('ghost', angle, word, enemySpeed, spellChance)];
     }
     const angle = this.rng() * Math.PI * 2;
     const wordCount = 1 + Math.floor(this.rng() * difficulty.maxWords);
@@ -764,6 +781,7 @@ export class GameSession {
       speed: Math.min(maxSpeed, baseSpeed * speedScale),
       // One roll for both: under the chance it is spread evenly, so it also picks the spell.
       spell: roll < spellChance ? spellAt(roll / spellChance) : undefined,
+      hidden: type === 'ghost' ? true : undefined,
     };
     this.enemies.push(enemy);
     return enemy;
