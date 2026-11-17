@@ -317,12 +317,13 @@ export const config = {
     minSpawnIntervalMs: 400,
     maxKamikazeChance: 0.35,
     maxGhostChance: 0.15,
-    // Chance that a regular spawn carries a spell, held between 0 and maxSpellChance: none at
-    // the start of a run, then about one demon in ten.
+    // Chance that a regular spawn carries a spell, held between 0 and maxSpellChance: one demon
+    // in ten from the first second, so a normal run meets a carrier about every 20 to 25 s early
+    // on, then a bit more as the spawn interval shrinks. A tank always carries one, on top.
     spellChance: [
-      [0, 0],
-      [90, 0.05],
-      [180, 0.1],
+      [0, 0.1],
+      [90, 0.1],
+      [180, 0.12],
     ],
     maxSpellChance: 0.12,
     // Tanks ignore the spawn interval and the dice: the first one comes after `first` seconds,

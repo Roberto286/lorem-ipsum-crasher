@@ -816,13 +816,15 @@ describe('combo', () => {
 });
 
 describe('spells', () => {
-  // Late enough in a run that the spell chance is past zero.
+  // Late enough in a run that the spell chance has grown to its last keyframe.
   const lateMs = 180_000;
   const spellChance = difficultyAt(lateMs / 1000, 'normal').spellChance;
+  const startChance = difficultyAt(0, 'normal').spellChance;
   const freezeMs = config.spells.freeze.seconds * 1000;
 
-  it('gives no demon a spell at the start of a run', () => {
-    expect(newSession(() => 0.5).update(16).spawned[0].spell).toBeUndefined();
+  it('gives a spawn a spell from the first second of a run', () => {
+    expect(newSession(() => startChance / 2).update(16).spawned[0].spell).toBeDefined();
+    expect(newSession(() => startChance).update(16).spawned[0].spell).toBeUndefined();
   });
 
   it('gives a regular spawn a spell only when its roll is under the chance', () => {
