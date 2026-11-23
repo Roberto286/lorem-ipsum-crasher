@@ -1,76 +1,70 @@
 # Lorem Ipsum Crasher
 
-The last developer online is fighting demons that carry lorem ipsum. Type the words on them before they reach you.
+You're the last developer online, and demons carrying lorem ipsum are walking at your desk. Type the words on them before they get to you.
 
-Desktop browsers only. Phones and tablets get a notice instead of the game.
+Built with Phaser, TypeScript and Vite. Desktop browsers only: phones and tablets just get a notice.
 
-## How to play
+## Playing
 
-- Type the lorem ipsum word on a demon to hurl it at that demon. Typing it fully kills the demon.
-- Demons that reach you cost lives. Tanks cost two.
-- Ghosts are see-through demons whose word shows as `???` until they come close (100 px from you). They carry one word on every level, hell included. They start to appear after about 45 s.
-- Perfect words (no wrong letter) build a combo multiplier, up to x5: one level per 5 perfect words in a row. Losing a life resets it to x1.
-- A wrong letter drops the multiplier one level, once per word, and breaks the streak. On hell it resets the multiplier to x1.
-- Backspace erases a wrong letter on easy, normal and hard. On hell a wrong letter clears the buffer and speeds up the demon you were typing at, which turns its label red.
-- Escape pauses. Pausing also happens when the window loses focus.
-- Menu: arrow keys choose level and role, Enter starts. Press H in the menu for the in-game guide, which has a page per role. The intro can be skipped with Escape.
+Type the word on a demon and it flies at the demon. Finish the word and the demon dies. If one reaches you, you lose a life (a tank costs two).
+
+- **Combo.** Words typed with no wrong letter build a multiplier, up to x5, one level per 5 perfect words in a row. Losing a life resets it.
+- **Typos.** A wrong letter drops the multiplier one level and breaks your streak. Backspace erases it, except on hell, where the whole buffer clears and the demon you were aiming at speeds up.
+- **Ghosts** show `???` instead of a word until they get within 100 px of you. They start showing up after about 45 s.
+- **Escape** pauses, and so does losing window focus.
+
+In the menu, arrow keys pick level and role, Enter starts, and H opens the in-game guide. Escape skips the intro.
 
 ## Levels
 
 - **Easy**: slower spawns, one word per demon, fewer kamikazes and ghosts.
 - **Normal**: the default.
 - **Hard**: faster spawns, up to three words per demon.
-- **Hell**: like hard, but a demon's words are typed as one phrase, spaces included, and typos are not forgiven. A tank's words come as 2-word phrases on hell only.
+- **Hell**: like hard, but a demon's words are one phrase, spaces included, and typos aren't forgiven.
 
 ## Roles
 
-Each role types a command to use its skill. Commands never share a prefix with lorem words.
+Each role has a skill and an ultimate, and you use them by typing their command. Commands never share a prefix with lorem words, so they can't clash with a demon. The ultimate charges with perfect words and with time.
 
-| Role   | Skill (command)                                  | Ultimate (command)                                            | Passive                                                       |
-| ------ | ------------------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------- |
-| Junior | `tab`: type the closest demon's next word for it | `snippet`: first 2 letters of a demon's word kill it, for 6 s | A demon that reaches you stops there for a short grace period |
-| DevOps | `throttle`: demons slow down                     | `freeze`: demons stop                                         | Demons you hit slow down                                      |
-| DBA    | `truncate`: cut letters off every demon's word   | `drop`: remove every demon                                    | Each kill cuts letters off the closest demon's word           |
-| CTO    | `pushback`: push every demon back                | `descope`: short words on every demon, kill on type           | Demons you hit get pushed back                                |
-
-The ultimate charges with perfect words and with time.
+| Role   | Skill                                        | Ultimate                                               | Passive                                       |
+| ------ | -------------------------------------------- | ------------------------------------------------------ | --------------------------------------------- |
+| Junior | `tab`: types the closest demon's next word   | `snippet`: 2 letters of a word kill the demon, for 6 s | A demon that reaches you waits a moment first |
+| DevOps | `throttle`: demons slow down                 | `freeze`: demons stop                                  | Demons you hit slow down                      |
+| DBA    | `truncate`: shortens every demon's next word | `drop`: removes every demon                            | Each kill shortens the closest demon's word   |
+| CTO    | `pushback`: pushes every demon back          | `descope`: every demon gets a short word, kill on type | Demons you hit get pushed back                |
 
 ## Drops
 
-Some demons carry a spell, from the first seconds of a run. Its effect applies only if you kill the demon with a clean word (no wrong letters in that word). A carrier's label has a coloured background; a tank keeps its own background and gets a frame in the spell colour.
+Some demons carry a spell. You get it only if you kill the demon with a clean word.
 
-- **Patch**: +1 life, never above your starting lives.
-- **Firewall**: stops the next demon that reaches you instead of letting it hit. A second firewall does not stack.
-- **Linter**: forgives the next wrong letter, so the combo holds. A second linter does not stack.
-- **Cache**: doubles word points for 8 s. A second cache restarts the timer.
-- **Coffee**: refills your skill cooldown and adds 5 charge to your ultimate.
+- **Patch**: +1 life, up to your starting lives.
+- **Firewall**: blocks the next demon that reaches you.
+- **Linter**: forgives your next wrong letter.
+- **Cache**: double points for 8 s.
+- **Coffee**: refills your skill cooldown and charges your ultimate.
 
-When a drop lands, its name floats up from your hero and a higher-pitched blip plays.
+Linter and firewall don't stack. High scores are saved in your browser, one board per level and role.
 
-High scores are saved in your browser, one board per level and role.
+## Running it
 
-## Development
-
-Requirements: a current Node.js LTS. Music regeneration also needs `ffmpeg`.
+You need a current Node.js LTS.
 
 ```sh
-npm ci            # install
+npm ci
 npm run dev       # dev server
 npm run build     # typecheck and build to dist/
-npm run preview   # serve the build
-npm test          # unit tests (Vitest)
-npm run lint      # ESLint
-npm run format    # Prettier
+npm test          # Vitest
+npm run lint
 ```
 
-Tuning (spawn rates, speeds, points, lives, colours) lives in `src/config.ts`. The values above describe the config at the time of writing.
+All the tuning (spawn rates, speeds, points, colours) is in `src/config.ts`. The rules live in `src/utils/gameSession.ts` and don't depend on Phaser; scenes only draw and pass input along.
 
-Game rules live in `src/utils/gameSession.ts`. Scenes only draw and forward input.
-
-The sound effects are generated by `scripts/generate_sfx.py` and the music by `scripts/generate_music.py`.
+The sound effects and the music are generated by `scripts/generate_sfx.py` and `scripts/generate_music.py` (the music needs `ffmpeg`).
 
 ## Credits
 
-See `src/assets/CREDITS.txt` for the sources and licences of the sounds, music, font, background and sprites.
+Sprites, background and font come from other people's work; sources and licences are in `src/assets/CREDITS.txt`.
 
-For agents and contributor conventions, see `AGENTS.md`.
+The code is MIT licensed (`LICENSE`). Third-party assets keep their own licences.
+
+`AGENTS.md` has notes for coding agents.
